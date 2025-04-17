@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">SelfCare</string>
+    <string name="selected_date_label">Tasks for:</string>
+    <string name="Monday">Mon</string>
+    <string name="Tuesday">Tue</string>
+    <string name="Wednesday">Wed</string>
+    <string name="Thursday">Thu</string>
+    <string name="Friday">Fri</string>
+    <string name="Saturday">Sat</string>
+    <string name="Sunday">Sun</string>
+    <string name = "add_task_description">Add Task</string>
+</resources>
