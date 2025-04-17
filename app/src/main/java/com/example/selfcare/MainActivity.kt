@@ -4,63 +4,47 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.selfcare.ui.theme.SelfCareTheme
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.with
-import androidx.compose.runtime.*
+import java.util.*
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.animation.*
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.animation.with
-
-
-
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 
 import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+
+
+
+
+
+
 
 
 
@@ -73,7 +57,7 @@ class MainActivity : ComponentActivity() {
             SelfCareTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    bottomBar = { BottomNavBar() } // 👈 Add this line for the bottom bar
+                    bottomBar = { BottomNavBar() }
                 ) { innerPadding ->
                     CalendarView(modifier = Modifier.padding(innerPadding))
                 }
@@ -82,34 +66,35 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun CalendarView(modifier: Modifier = Modifier) {
     var weekOffset by remember { mutableStateOf(0) }
 
-    val calendar = java.util.Calendar.getInstance()
-    calendar.add(java.util.Calendar.WEEK_OF_YEAR, weekOffset)
+    val calendar = Calendar.getInstance()
+    calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
 
-    val currentYear = calendar.get(java.util.Calendar.YEAR)
-    val currentMonth = calendar.getDisplayName(java.util.Calendar.MONTH, java.util.Calendar.LONG, java.util.Locale.getDefault())
+    val currentYear = calendar.get(Calendar.YEAR)
+    val currentMonth = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())
 
-    val today = java.util.Calendar.getInstance()
+    val today = Calendar.getInstance()
 
     // Get Monday of this week
-    val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
-    val mondayOffset = if (dayOfWeek == java.util.Calendar.SUNDAY) -6 else java.util.Calendar.MONDAY - dayOfWeek
-    calendar.add(java.util.Calendar.DATE, mondayOffset)
+    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+    val mondayOffset = if (dayOfWeek == Calendar.SUNDAY) -6 else Calendar.MONDAY - dayOfWeek
+    calendar.add(Calendar.DATE, mondayOffset)
 
     val weekDates = (0..6).map {
-        val date = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-        val month = calendar.get(java.util.Calendar.MONTH)
-        val year = calendar.get(java.util.Calendar.YEAR)
-        calendar.add(java.util.Calendar.DATE, 1)
+        val date = calendar.get(Calendar.DAY_OF_MONTH)
+        val month = calendar.get(Calendar.MONTH)
+        val year = calendar.get(Calendar.YEAR)
+        calendar.add(Calendar.DATE, 1)
         Triple(date, month, year)
     }
 
-    val timeSlots = (1..23).map { "$it :00" }
+    val timeSlots = (1..23).map { "$it:00" }
     val scrollState = rememberScrollState()
-    val shortDayNames = listOf("M","T","W","T","F","S","S")
+    val shortDayNames = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column(
         modifier = modifier
@@ -135,11 +120,11 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 .padding(bottom = 8.dp)
         )
 
-        // Days of Week
         // Days of Week Header with arrows
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Left arrow
             IconButton(onClick = { weekOffset-- }) {
@@ -149,39 +134,46 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 )
             }
 
-            // Day columns (M, T, W… with date)
+            // Day headers
             AnimatedContent(
                 targetState = weekDates,
                 transitionSpec = {
-                    // Slide in from left and fade in
-                    slideInHorizontally(
-                        animationSpec = tween(300),
-                        initialOffsetX = { fullWidth -> if (weekOffset > 0) fullWidth else -fullWidth }
-                    ) with fadeIn(animationSpec = tween(300)) // Combine slide in with fade in
-
-                    // Slide out to the right and fade out
-                    slideOutHorizontally(
-                        animationSpec = tween(300),
-                        targetOffsetX = { fullWidth -> if (weekOffset > 0) -fullWidth else fullWidth }
-                    ) with fadeOut(animationSpec = tween(300)) // Combine slide out with fade out
+                    fadeIn(animationSpec = tween(300)) with
+                            fadeOut(animationSpec = tween(300))
                 }
             ) { animatedWeekDates ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     animatedWeekDates.forEachIndexed { index, (date, month, year) ->
-                        val isToday = date == today.get(java.util.Calendar.DAY_OF_MONTH)
-                                && month == today.get(java.util.Calendar.MONTH)
-                                && year == today.get(java.util.Calendar.YEAR)
+                        val isToday = date == today.get(Calendar.DAY_OF_MONTH) &&
+                                month == today.get(Calendar.MONTH) &&
+                                year == today.get(Calendar.YEAR)
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            modifier = Modifier
+                                .width(50.dp) // Fixed width for each day column
+                                .padding(horizontal = 2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Text(
                                 text = shortDayNames[index],
                                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
                             )
-                            Text(
-                                text = date.toString(),
-                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp) // Set a fixed size for the circle
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isToday) Color(0xFFF9C8D9) else Color.Transparent
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = date.toString(),
+                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
                         }
+
                     }
                 }
             }
@@ -189,7 +181,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
             // Right arrow
             IconButton(onClick = { weekOffset++ }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.Filled.ArrowForward,
                     contentDescription = "Next Week"
                 )
             }
@@ -197,7 +189,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Time Grid
         // Time Grid
         Column(
             modifier = Modifier
@@ -208,12 +199,12 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp)
+                        .height(65.dp)
                 ) {
                     // Fixed-width column for time label
                     Box(
                         modifier = Modifier
-                            .width(50.dp)
+                            .width(40.dp)
                             .fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
@@ -237,11 +228,33 @@ fun CalendarView(modifier: Modifier = Modifier) {
         }
     }
 }
+
+
+
+
 @Composable
 fun BottomNavBar() {
-    // Your bottom navigation implementation
+    NavigationBar {
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.DateRange, contentDescription = "Back") },
+            label = { Text("Back") },
+            selected = false,
+            onClick = { /* Handle click */ }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.FavoriteBorder, contentDescription = "Health") },
+            label = { Text("Next") },
+            selected = false,
+            onClick = { /* Handle click */ }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Lock, contentDescription = "Financials") },
+            label = { Text("Settings") },
+            selected = false,
+            onClick = { /* Handle click */ }
+        )
+    }
 }
-
 
 @Preview(showBackground = true)
 @Composable
