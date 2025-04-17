@@ -28,16 +28,13 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
-
-import androidx.compose.material3.Text
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.draw.clip
 
 
@@ -66,10 +63,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun CalendarView(modifier: Modifier = Modifier) {
-    var weekOffset by remember { mutableStateOf(0) }
+    var weekOffset by remember { mutableIntStateOf(0) }
 
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
@@ -129,7 +125,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
             // Left arrow
             IconButton(onClick = { weekOffset-- }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Previous Week"
                 )
             }
@@ -138,7 +134,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
             AnimatedContent(
                 targetState = weekDates,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) with
+                    fadeIn(animationSpec = tween(300)) togetherWith
                             fadeOut(animationSpec = tween(300))
                 }
             ) { animatedWeekDates ->
@@ -181,7 +177,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
             // Right arrow
             IconButton(onClick = { weekOffset++ }) {
                 Icon(
-                    imageVector = Icons.Filled.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Next Week"
                 )
             }
