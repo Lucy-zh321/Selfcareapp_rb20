@@ -37,6 +37,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -182,22 +185,21 @@ fun CalendarView(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Time Grid
-        Column(
+
+        // Time + Grid section
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.87F)
+                .padding(0.dp)
                 .verticalScroll(scrollState)
         ) {
-            timeSlots.forEach { timeLabel ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(65.dp)
-                ) {
-                    // Fixed-width column for time label
+            // Time labels
+            Column {
+                timeSlots.forEach { timeLabel ->
                     Box(
                         modifier = Modifier
-                            .width(40.dp)
-                            .fillMaxHeight(),
+                            .width(30.dp)
+                            .height(63.5.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -205,14 +207,51 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                }
+            }
 
-                    // 7 columns for the days
-                    repeat(7) {
-                        Box(
+            // Box for the grid that contains the vertical and horizontal lines
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(Color(0xFFFFF0F4)) // Light pink background
+                    .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium) // Outer border
+                    .padding(6.dp) // Padding inside to keep lines from touching the outer box
+                    .fillMaxWidth(0.7F)
+            ) {
+                // Horizontal lines (time slot separators)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    repeat(timeSlots.size - 1 ) { index ->
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Divider(
+                                color = Color(0xFFCCCCCC), // Horizontal separator color
+                                thickness = 1.dp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
+                    }
+                }
+
+                // Vertical lines (day separators) for 7 columns (6 dividers)
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 0.dp) // Add top padding to give space
+                ) {
+                    repeat(6) { // Repeat 6 times for 6 dividers to make 7 columns
+                        Divider(
+                            color = Color(0xFFCCCCCC), // Vertical line color
+                            thickness = 1.dp, // Vertical line thickness
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(2.dp)
-                                .background(MaterialTheme.colorScheme.secondary)
+                                .fillMaxHeight()
+                                .width(1.dp) // Make vertical lines 1 dp wide
+                                .padding(horizontal = 2.dp) // Padding between the lines
                         )
                     }
                 }
@@ -221,7 +260,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
+        @Composable
 fun BottomNavBar() {
     NavigationBar {
         NavigationBarItem(
