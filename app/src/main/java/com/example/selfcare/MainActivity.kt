@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,15 +37,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.draw.clip
-
-
-
-
-
-
-
-
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,7 +87,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(0.dp)
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { _, dragAmount ->
                     if (dragAmount > 50) {
@@ -118,15 +110,19 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
         // Days of Week Header with arrows
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // Left arrow
-            IconButton(onClick = { weekOffset-- }) {
+            IconButton(
+                onClick = { weekOffset-- },
+                modifier = Modifier.padding(0.dp)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Previous Week"
+                    contentDescription = "Previous Week",
+                    modifier = Modifier.padding(0.dp),
                 )
             }
 
@@ -138,7 +134,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             fadeOut(animationSpec = tween(300))
                 }
             ) { animatedWeekDates ->
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth(0.8F)) {
                     animatedWeekDates.forEachIndexed { index, (date, month, year) ->
                         val isToday = date == today.get(Calendar.DAY_OF_MONTH) &&
                                 month == today.get(Calendar.MONTH) &&
@@ -146,8 +142,8 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
                         Column(
                             modifier = Modifier
-                                .width(50.dp) // Fixed width for each day column
-                                .padding(horizontal = 2.dp),
+                                .width(40.dp) // Fixed width for each day column
+                                .padding(horizontal = 0.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -156,7 +152,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             )
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp) // Set a fixed size for the circle
+                                    .size(30.dp) // Set a fixed size for the circle
                                     .clip(CircleShape)
                                     .background(
                                         if (isToday) Color(0xFFF9C8D9) else Color.Transparent
@@ -224,9 +220,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
         }
     }
 }
-
-
-
 
 @Composable
 fun BottomNavBar() {
