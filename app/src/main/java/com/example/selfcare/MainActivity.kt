@@ -131,13 +131,15 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
             // Day headers
             AnimatedContent(
+                modifier = Modifier.fillMaxWidth(0.9F),
                 targetState = weekDates,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith
                             fadeOut(animationSpec = tween(300))
                 }
             ) { animatedWeekDates ->
-                Row(modifier = Modifier.fillMaxWidth(0.8F)) {
+                Row(modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly) {
                     animatedWeekDates.forEachIndexed { index, (date, month, year) ->
                         val isToday = date == today.get(Calendar.DAY_OF_MONTH) &&
                                 month == today.get(Calendar.MONTH) &&
@@ -189,7 +191,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
         // Time + Grid section
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.87F)
+                .fillMaxWidth()
                 .padding(0.dp)
                 .verticalScroll(scrollState)
         ) {
@@ -198,8 +200,8 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 timeSlots.forEach { timeLabel ->
                     Box(
                         modifier = Modifier
-                            .width(30.dp)
-                            .height(63.5.dp),
+                            .fillMaxWidth(0.1F)
+                            .height(60.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -217,16 +219,16 @@ fun CalendarView(modifier: Modifier = Modifier) {
                     .clip(MaterialTheme.shapes.medium)
                     .background(Color(0xFFFFF0F4)) // Light pink background
                     .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium) // Outer border
-                    .padding(6.dp) // Padding inside to keep lines from touching the outer box
-                    .fillMaxWidth(0.7F)
+                    .padding(0.dp) // Padding inside to keep lines from touching the outer box
+                    .fillMaxWidth(0.9F)
             ) {
                 // Horizontal lines (time slot separators)
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    repeat(timeSlots.size - 1 ) { index ->
+                    repeat(timeSlots.size) { index ->
                         Row(modifier = Modifier.fillMaxWidth()) {
-                            Divider(
+                            HorizontalDivider(
                                 color = Color(0xFFCCCCCC), // Horizontal separator color
                                 thickness = 1.dp,
                                 modifier = Modifier
@@ -234,27 +236,42 @@ fun CalendarView(modifier: Modifier = Modifier) {
                                     .height(1.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
+
+                        // Vertical lines (day separators) for 7 columns (6 dividers)
+                        Row(
+                            modifier = Modifier
+                                .height(59.dp)
+                                .padding(top = 0.dp) // Add top padding to give space
+                        ) {
+                            repeat(shortDayNames.size - 1) { // Repeat for 6 dividers to make 7 columns
+                                Text(
+                                    text = "  ",
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .padding(bottom = 8.dp)
+                                )
+                                VerticalDivider(
+                                    color = Color(0xFFCCCCCC), // Vertical line color
+                                    thickness = 1.dp, // Vertical line thickness
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(1.dp) // Make vertical lines 1 dp wide
+                                        .padding(horizontal = 2.dp) // Padding between the lines
+                                )
+                            }
+
+                            Text(
+                                text = "  ",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .padding(bottom = 8.dp)
+                            )
+                        }
+//                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
                     }
                 }
 
-                // Vertical lines (day separators) for 7 columns (6 dividers)
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 0.dp) // Add top padding to give space
-                ) {
-                    repeat(6) { // Repeat 6 times for 6 dividers to make 7 columns
-                        Divider(
-                            color = Color(0xFFCCCCCC), // Vertical line color
-                            thickness = 1.dp, // Vertical line thickness
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .width(1.dp) // Make vertical lines 1 dp wide
-                                .padding(horizontal = 2.dp) // Padding between the lines
-                        )
-                    }
-                }
+
             }
         }
     }
