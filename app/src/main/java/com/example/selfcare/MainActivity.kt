@@ -38,6 +38,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
+
+import androidx.compose.material3.MaterialTheme
+
+import androidx.compose.material.icons.filled.Add
+
 
 
 
@@ -47,20 +58,51 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SelfCareTheme {
+                // 1. Define dialog state here
+                var showTaskDialog by remember { mutableStateOf(false) }
+                var taskName by remember { mutableStateOf("") }
+                var taskTime by remember { mutableStateOf("09:00") }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    bottomBar = { BottomNavBar() }
+                    bottomBar = { BottomNavBar() },
+                    floatingActionButton = {
+                        // 2. Trigger dialog with FAB
+                        FloatingActionButton(onClick = { showTaskDialog = true }) {
+                            Icon(Icons.Filled.Add, contentDescription = "Add Task")
+                        }
+                    }
                 ) { innerPadding ->
-                    CalendarView(modifier = Modifier.padding(innerPadding))
+                    // 3. Main screen content
+                    Column(modifier = Modifier.padding(innerPadding)) {
+                        CalendarView()
+                    }
+
+                    // 4. Show dialog conditionally
+                    if (showTaskDialog) {
+                        TaskDialog(
+                            taskName = taskName,
+                            taskTime = taskTime,
+                            onTaskNameChange = { taskName = it },
+                            onTaskTimeChange = { taskTime = it },
+                            onDismiss = { showTaskDialog = false },
+                            onSave = {
+                                // Save the task somewhere if needed
+                                showTaskDialog = false
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+
 @Composable
 fun CalendarView(modifier: Modifier = Modifier) {
     var weekOffset by remember { mutableIntStateOf(0) }
+
 
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
@@ -170,7 +212,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
                                 )
                             }
                         }
-
                     }
                 }
             }
@@ -187,8 +228,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Time Grid
-
-        // Time + Grid section
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -212,7 +251,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 }
             }
 
-            // Box for the grid that contains the vertical and horizontal lines
+            // Grid with tasks
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -222,7 +261,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                     .padding(0.dp) // Padding inside to keep lines from touching the outer box
                     .fillMaxWidth(0.9F)
             ) {
-                // Horizontal lines (time slot separators)
+                // Vertical and horizontal lines for time slots
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -237,7 +276,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             )
                         }
 
-                        // Vertical lines (day separators) for 7 columns (6 dividers)
+                        // Vertical lines (day separators)
                         Row(
                             modifier = Modifier
                                 .height(59.dp)
@@ -267,17 +306,62 @@ fun CalendarView(modifier: Modifier = Modifier) {
                                     .padding(bottom = 8.dp)
                             )
                         }
-//                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
                     }
                 }
-
-
             }
+
+            // Show task dialog if needed
+
         }
     }
 }
 
-        @Composable
+@Composable
+fun TaskDialog(
+    taskName: String,
+    taskTime: String,
+    onTaskNameChange: (String) -> Unit,
+    onTaskTimeChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Task") },
+        text = {
+            Column {
+                Text("Task Name:")
+                TextField(
+                    value = taskName,
+                    onValueChange = onTaskNameChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Time:")
+                TextField(
+                    value = taskTime,
+                    onValueChange = onTaskTimeChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onSave) {
+                Text("Save")
+            }
+        }
+    )
+}
+
+
+
+
+
+
+
+
+
+@Composable
 fun BottomNavBar() {
     NavigationBar {
         NavigationBarItem(
@@ -308,3 +392,4 @@ fun PreviewCalendar() {
         CalendarView()
     }
 }
+
