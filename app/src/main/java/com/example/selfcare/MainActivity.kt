@@ -44,6 +44,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.filled.Add
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.*
+import androidx.compose.ui.unit.*
+import kotlin.math.max
+import kotlin.math.min
+
 
 
 
@@ -54,43 +68,25 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SelfCareTheme {
-                // 1. Define dialog state here
-                var showTaskDialog by remember { mutableStateOf(false) }
-                var taskName by remember { mutableStateOf("") }
-                var taskTime by remember { mutableStateOf("09:00") }
+                val navController = rememberNavController()
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    bottomBar = { BottomNavBar() },
-                    floatingActionButton = {
-                        // 2. Trigger dialog with FAB
-                        FloatingActionButton(onClick = { showTaskDialog = true }) {
-                            Icon(Icons.Filled.Add, contentDescription = "Add Task")
-                        }
-                    }
-                ) { innerPadding ->
-                    // 3. Main screen content
-                    Column(modifier = Modifier.padding(innerPadding)) {
-                        CalendarView()
+                NavHost(navController = navController, startDestination = "main") {
+                    composable("main") {
+                        MainScreen(onAddTaskClick = {
+                            navController.navigate("addTask")
+                        })
                     }
 
-                    // 4. Show dialog conditionally
-                    if (showTaskDialog) {
-                        TaskDialog(
-                            taskName = taskName,
-                            taskTime = taskTime,
-                            onTaskNameChange = { taskName = it },
-                            onTaskTimeChange = { taskTime = it },
-                            onDismiss = { showTaskDialog = false },
-                            onSave = {
-                                // Save the task somewhere if needed
-                                showTaskDialog = false
-                            }
-                        )
+                    composable("addTask") {
+                        AddTaskScreen(onBack = {
+                            navController.popBackStack()
+                        })
                     }
                 }
             }
         }
+
+
     }
 }
 
@@ -378,6 +374,292 @@ fun BottomNavBar() {
             selected = false,
             onClick = { /* Handle click */ }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddTaskScreen(onBack: () -> Unit) {
+    var taskName by remember { mutableStateOf("") }
+    var startHour by remember { mutableStateOf(12) }
+    var startMinute by remember { mutableStateOf(0) }
+    var endHour by remember { mutableStateOf(13) }
+    var endMinute by remember { mutableStateOf(0) }
+    var startTime by remember { mutableStateOf("12:00") }
+    var endTime by remember { mutableStateOf("13:00") }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("New Task") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top
+        ) {
+            OutlinedTextField(
+                value = taskName,
+                onValueChange = { taskName = it },
+                label = { Text("Task Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Row with two empty boxes side by side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp) // Adjust spacing between boxes
+            ) {
+                // Left box (Start)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(text = "Start", style = MaterialTheme.typography.bodySmall)
+                    Box(
+                        modifier = Modifier
+                            .height(80.dp)
+                            .fillMaxWidth() // Ensure the box fills the available width
+                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                    ){
+                        // Simple text field for the Start time (e.g., "12:30")
+                        OutlinedTextField(
+                            value = startTime,
+                            onValueChange = { newTime ->
+                                startTime = newTime
+                            },
+                            label = { Text("Start Time") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+
+
+
+
+
+
+
+
+                }
+
+                // Right box (End)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(text = "End", style = MaterialTheme.typography.bodySmall)
+                    Box(
+                        modifier = Modifier
+                            .height(80.dp)
+                            .fillMaxWidth() // Ensure the box fills the available width
+
+                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+//@Composable
+//fun TimePickerBox(
+//    label: String,
+//    hour: Int,
+//    minute: Int,
+//    onHourChange: (Int) -> Unit,
+//    onMinuteChange: (Int) -> Unit
+//) {
+//    val hourList = (0..23).map { it.toString().padStart(2, '0') }
+//    val minuteList = (0..59).map { it.toString().padStart(2, '0') }
+//    val listState = rememberLazyListState()
+//
+//    Column(
+//        modifier = Modifier
+//            .background(Color(0xFFF0F0F0), shape = RoundedCornerShape(8.dp))
+//            .padding(16.dp)
+//    ) {
+//        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+//
+//        Spacer(modifier = Modifier.height(8.dp))
+//
+//        Column(
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Text(text = hourList[hour], style = MaterialTheme.typography.headlineSmall)
+//
+//            // Faded hour and minute values
+//            Row(
+//                horizontalArrangement = Arrangement.Center,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = hourList[max(0, hour - 1)],
+//                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+//                )
+//                Spacer(modifier = Modifier.width(4.dp))
+//                Text(text = ":", style = MaterialTheme.typography.bodySmall)
+//                Spacer(modifier = Modifier.width(4.dp))
+//                Text(
+//                    text = hourList[min(23, hour + 1)],
+//                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            // Minute picker
+//            Text(text = minuteList[minute], style = MaterialTheme.typography.headlineSmall)
+//
+//            // Faded minute values
+//            Row(
+//                horizontalArrangement = Arrangement.Center,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = minuteList[max(0, minute - 1)],
+//                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+//                )
+//                Spacer(modifier = Modifier.width(4.dp))
+//                Text(text = ":", style = MaterialTheme.typography.bodySmall)
+//                Spacer(modifier = Modifier.width(4.dp))
+//                Text(
+//                    text = minuteList[min(59, minute + 1)],
+//                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            // Lazy Column for scrolling hours and minutes
+//            LazyColumn(state = listState) {
+//                itemsIndexed(hourList) { index, item ->
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .clickable {
+//                                onHourChange(index)
+//                            }
+//                            .padding(8.dp),
+//                        horizontalArrangement = Arrangement.Center
+//                    ) {
+//                        Text(text = item, style = MaterialTheme.typography.bodyLarge)
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
+//@Composable
+//fun TimePickerBox(
+//    label: String,
+//    selectedHour: Int,
+//    selectedMinute: Int,
+//    onHourChange: (Int) -> Unit,
+//    onMinuteChange: (Int) -> Unit,
+//    modifier: Modifier = Modifier
+//) {
+//    val hours = (0..23).toList()
+//    val minutes = (0..59).toList()
+//
+//    Column(
+//        modifier = Modifier
+//            .height(180.dp)
+//            .clip(RoundedCornerShape(16.dp))
+//            .background(Color(0xFFF3F3F3))
+//            .padding(8.dp)
+//    ) {
+//        Text(
+//            text = label,
+//            style = MaterialTheme.typography.labelLarge,
+//            modifier = Modifier.padding(bottom = 4.dp)
+//        )
+//        Divider(color = Color.Gray, thickness = 1.dp)
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.SpaceEvenly
+//        ) {
+//            TimeScrollColumn(
+//                items = hours,
+//                selectedItem = selectedHour,
+//                onSelectedItemChange = onHourChange
+//            )
+//            Text(":", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.align(Alignment.CenterVertically))
+//            TimeScrollColumn(
+//                items = minutes,
+//                selectedItem = selectedMinute,
+//                onSelectedItemChange = onMinuteChange
+//            )
+//        }
+//        Divider(color = Color.Gray, thickness = 1.dp)
+//    }
+//}
+
+@Composable
+fun TimeScrollColumn(
+    items: List<Int>,
+    selectedItem: Int,
+    onSelectedItemChange: (Int) -> Unit
+) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(selectedItem) {
+        coroutineScope.launch {
+            listState.scrollToItem(selectedItem)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .height(100.dp)
+            .width(60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        items(items.size) { index ->
+            val isSelected = index == selectedItem
+            Text(
+                text = items[index].toString().padStart(2, '0'),
+                style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                modifier = Modifier
+                    .height(32.dp)
+                    .clickable {
+                        onSelectedItemChange(index)
+                    },
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+
+
+@Composable
+fun MainScreen(onAddTaskClick: () -> Unit) {
+    Scaffold(
+        bottomBar = { BottomNavBar() },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { onAddTaskClick() }) {
+                Icon(Icons.Filled.Add, contentDescription = "Add Task")
+            }
+        }
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+            CalendarView()
+        }
     }
 }
 
