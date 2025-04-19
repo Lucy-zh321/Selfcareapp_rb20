@@ -54,6 +54,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.lazy.LazyListState
 
 
 
@@ -418,6 +419,13 @@ fun AddTaskScreen(onBack: () -> Unit) {
                             onMinuteChange = { endMinute = it }
                         )
                     }
+                    //
+
+
+
+
+
+
                 }
             }
         }
@@ -443,43 +451,31 @@ fun TimePickerWheel(
     val hourState = rememberLazyListState(50 * hourList.size + selectedHour)
     val minuteState = rememberLazyListState(50 * minuteList.size + selectedMinute)
 
-    val isHourScrolling by remember { derivedStateOf { hourState.isScrollInProgress } }
-    val isMinuteScrolling by remember { derivedStateOf { minuteState.isScrollInProgress } }
-    var hourSelectedIndex by remember { mutableIntStateOf(-1) }
-    var minuteSelectedIndex by remember { mutableIntStateOf(-1) }
-
-
-    // Snap selection when scrolling stops
-    // Get the hour that's visually centered
-    LaunchedEffect(hourState.isScrollInProgress.not()) {
-        val visibleItems = hourState.layoutInfo.visibleItemsInfo
-        val center = hourState.layoutInfo.viewportSize.height / 2
-        val centeredItem = visibleItems.minByOrNull {
-            kotlin.math.abs((it.offset + it.size / 2) - center)
-        }
-        centeredItem?.let {
-            hourSelectedIndex = it.index
-            val hour = repeatedHours[it.index % repeatedHours.size]
-            onHourChange(hour)
-        }
+    // Helper function to get centered index
+    fun getCenteredItemIndex(state: LazyListState): Int? {
+        val center = state.layoutInfo.viewportSize.height / 2
+        return state.layoutInfo.visibleItemsInfo
+            .minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - center) }
+            ?.index
     }
 
 
+    // Get current centered items instantly
+    val hourCenteredIndex = getCenteredItemIndex(hourState)
+    val minuteCenteredIndex = getCenteredItemIndex(minuteState)
+
+    // Update external selection when scroll stops
+    LaunchedEffect(hourState.isScrollInProgress.not()) {
+        hourCenteredIndex?.let {
+            onHourChange(repeatedHours[it % repeatedHours.size])
+        }
+    }
 
     LaunchedEffect(minuteState.isScrollInProgress.not()) {
-        val visibleItems = minuteState.layoutInfo.visibleItemsInfo
-        val center = minuteState.layoutInfo.viewportSize.height / 2
-        val centeredItem = visibleItems.minByOrNull {
-            kotlin.math.abs((it.offset + it.size / 2) - center)
-        }
-        centeredItem?.let {
-            minuteSelectedIndex = it.index
-            val minute = repeatedMinutes[it.index % repeatedMinutes.size]
-            onMinuteChange(minute)
+        minuteCenteredIndex?.let {
+            onMinuteChange(repeatedMinutes[it % repeatedMinutes.size])
         }
     }
-
-
 
     val selectorLineColor = Color.Gray
     val selectorLineThickness = 1.dp
@@ -490,9 +486,7 @@ fun TimePickerWheel(
             .fillMaxWidth()
     ) {
         // Selector lines (top & bottom)
-        Column(
-            modifier = Modifier.matchParentSize()
-        ) {
+        Column(modifier = Modifier.matchParentSize()) {
             Spacer(modifier = Modifier.height(cellHeight - 6.dp))
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
@@ -522,7 +516,7 @@ fun TimePickerWheel(
             ) {
                 items(repeatedHours.size) { index ->
                     val hour = repeatedHours[index]
-                    val isSelected = index == hourSelectedIndex && !isHourScrolling
+                    val isSelected = index + 1 == hourCenteredIndex
                     val animatedSize by animateDpAsState(
                         targetValue = if (isSelected) 24.dp else 20.dp,
                         label = "HourSize"
@@ -537,7 +531,6 @@ fun TimePickerWheel(
                             .height(cellHeight)
                             .width(60.dp),
                         fontSize = with(LocalDensity.current) { animatedSize.toSp() },
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = Color.Black.copy(alpha = animatedAlpha),
                         textAlign = TextAlign.Center
                     )
@@ -561,7 +554,7 @@ fun TimePickerWheel(
             ) {
                 items(repeatedMinutes.size) { index ->
                     val minute = repeatedMinutes[index]
-                    val isSelected = index == minuteSelectedIndex && !isMinuteScrolling
+                    val isSelected = index + 1 == minuteCenteredIndex
                     val animatedSize by animateDpAsState(
                         targetValue = if (isSelected) 24.dp else 20.dp,
                         label = "MinuteSize"
@@ -576,7 +569,6 @@ fun TimePickerWheel(
                             .height(cellHeight)
                             .width(60.dp),
                         fontSize = with(LocalDensity.current) { animatedSize.toSp() },
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = Color.Black.copy(alpha = animatedAlpha),
                         textAlign = TextAlign.Center
                     )
