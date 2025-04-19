@@ -94,7 +94,6 @@ class MainActivity : ComponentActivity() {
 fun CalendarView(modifier: Modifier = Modifier) {
     var weekOffset by remember { mutableIntStateOf(0) }
 
-
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
 
@@ -116,7 +115,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
         Triple(date, month, year)
     }
 
-    val timeSlots = (1..23).map { "$it:00" }
+    val timeSlots = (0..23).map { "$it:00" }
     val scrollState = rememberScrollState()
     val shortDayNames = listOf("M", "T", "W", "T", "F", "S", "S")
 
@@ -148,12 +147,12 @@ fun CalendarView(modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Left arrow
             IconButton(
                 onClick = { weekOffset-- },
-                modifier = Modifier.padding(0.dp)
+                modifier = Modifier.weight(0.1F)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -164,15 +163,15 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
             // Day headers
             AnimatedContent(
-                modifier = Modifier.fillMaxWidth(0.9F),
+                modifier = Modifier.weight(0.8F),
                 targetState = weekDates,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith
                             fadeOut(animationSpec = tween(300))
                 }
             ) { animatedWeekDates ->
-                Row(modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceAround) {
                     animatedWeekDates.forEachIndexed { index, (date, month, year) ->
                         val isToday = date == today.get(Calendar.DAY_OF_MONTH) &&
                                 month == today.get(Calendar.MONTH) &&
@@ -180,7 +179,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
 
                         Column(
                             modifier = Modifier
-                                .width(40.dp) // Fixed width for each day column
+                                .width(30.dp) // Fixed width for each day column
                                 .padding(horizontal = 0.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -203,12 +202,16 @@ fun CalendarView(modifier: Modifier = Modifier) {
                                 )
                             }
                         }
+
                     }
                 }
             }
 
             // Right arrow
-            IconButton(onClick = { weekOffset++ }) {
+            IconButton(
+                onClick = { weekOffset++ },
+                modifier = Modifier.weight(0.1F)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Next Week"
@@ -219,20 +222,22 @@ fun CalendarView(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Time Grid
+
+        // Time + Grid section
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(0.dp)
                 .verticalScroll(scrollState)
         ) {
+
             // Time labels
-            Column {
+            Column (modifier = Modifier.weight(0.1F)){
                 timeSlots.forEach { timeLabel ->
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.1F)
                             .height(60.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.TopEnd
                     ) {
                         Text(
                             text = timeLabel,
@@ -242,67 +247,57 @@ fun CalendarView(modifier: Modifier = Modifier) {
                 }
             }
 
-            // Grid with tasks
+            // Box for the grid that contains the vertical and horizontal lines
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.8f)
                     .clip(MaterialTheme.shapes.medium)
                     .background(Color(0xFFFFF0F4)) // Light pink background
                     .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium) // Outer border
                     .padding(0.dp) // Padding inside to keep lines from touching the outer box
-                    .fillMaxWidth(0.9F)
             ) {
-                // Vertical and horizontal lines for time slots
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                // Horizontal lines (time slot separators)
+                Column {
                     repeat(timeSlots.size) { index ->
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            HorizontalDivider(
-                                color = Color(0xFFCCCCCC), // Horizontal separator color
-                                thickness = 1.dp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                            )
-                        }
-
-                        // Vertical lines (day separators)
+                        // Vertical lines (day separators) for 7 columns (6 dividers)
                         Row(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .height(59.dp)
-                                .padding(top = 0.dp) // Add top padding to give space
+                                .padding(top = 0.dp), // Add top padding to give space
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            repeat(shortDayNames.size - 1) { // Repeat for 6 dividers to make 7 columns
-                                Text(
-                                    text = "  ",
-                                    modifier = Modifier
-                                        .size(50.dp)
-                                        .padding(bottom = 8.dp)
-                                )
+                            repeat(shortDayNames.size + 1) { // Repeat for 6 dividers to make 7 columns
+//                                Text(
+//                                    text = "  ",
+//                                    modifier = Modifier
+//                                        .fillMaxHeight().border(1.dp, Color(0xFFCCCCCC))
+//                                )
+//                                  Box(modifier = Modifier.fillMaxHeight().border(1.dp, Color(0xFFCCCCCC)))
                                 VerticalDivider(
                                     color = Color(0xFFCCCCCC), // Vertical line color
                                     thickness = 1.dp, // Vertical line thickness
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .width(1.dp) // Make vertical lines 1 dp wide
-                                        .padding(horizontal = 2.dp) // Padding between the lines
+                                        .padding(horizontal = 0.dp) // Padding between the lines
                                 )
                             }
-
-                            Text(
-                                text = "  ",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .padding(bottom = 8.dp)
-                            )
                         }
+                        HorizontalDivider(
+                            color = Color(0xFFCCCCCC), // Horizontal separator color
+                            thickness = 1.dp,
+                            modifier = Modifier
+                                .height(1.dp)
+                        )
+//                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
                     }
                 }
+
+
             }
 
-            // Show task dialog if needed
-
+            Spacer (modifier = Modifier.weight(0.1F))
         }
     }
 }
