@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.platform.LocalDensity
 
 
@@ -344,10 +344,10 @@ fun BottomNavBar() {
 @Composable
 fun AddTaskScreen(onBack: () -> Unit) {
     var taskName by remember { mutableStateOf("") }
-    var startHour by remember { mutableStateOf(9) }
-    var startMinute by remember { mutableStateOf(0) }
-    var endHour by remember { mutableStateOf(13) }
-    var endMinute by remember { mutableStateOf(0) }
+    var startHour by remember { mutableIntStateOf(9) }
+    var startMinute by remember { mutableIntStateOf(0) }
+    var endHour by remember { mutableIntStateOf(13) }
+    var endMinute by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -450,8 +450,8 @@ fun TimePickerWheel(
 
     val isHourScrolling by remember { derivedStateOf { hourState.isScrollInProgress } }
     val isMinuteScrolling by remember { derivedStateOf { minuteState.isScrollInProgress } }
-    var hourSelectedIndex by remember { mutableStateOf(-1) }
-    var minuteSelectedIndex by remember { mutableStateOf(-1) }
+    var hourSelectedIndex by remember { mutableIntStateOf(-1) }
+    var minuteSelectedIndex by remember { mutableIntStateOf(-1) }
 
 
     // Snap selection when scrolling stops
@@ -499,16 +499,16 @@ fun TimePickerWheel(
             modifier = Modifier.matchParentSize()
         ) {
             Spacer(modifier = Modifier.height(cellHeight - 6.dp))
-            Divider(
-                color = selectorLineColor,
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
                 thickness = selectorLineThickness,
-                modifier = Modifier.fillMaxWidth()
+                color = selectorLineColor
             )
             Spacer(modifier = Modifier.height(cellHeight + 6.dp))
-            Divider(
-                color = selectorLineColor,
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
                 thickness = selectorLineThickness,
-                modifier = Modifier.fillMaxWidth()
+                color = selectorLineColor
             )
         }
 
