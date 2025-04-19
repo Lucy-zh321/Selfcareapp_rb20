@@ -52,16 +52,9 @@ import androidx.compose.ui.unit.*
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.Divider
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.*
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+
 
 
 
