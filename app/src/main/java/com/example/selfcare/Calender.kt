@@ -192,16 +192,18 @@ fun CalendarView(modifier: Modifier = Modifier) {
         ) {
 
             // Time labels
-            Column (modifier = Modifier.weight(0.1F)){
+            Column (
+                modifier = Modifier.weight(0.1F),
+                horizontalAlignment = Alignment.CenterHorizontally){
                 timeSlots.forEach { timeLabel ->
                     Box(
                         modifier = Modifier
                             .height(60.dp),
-                        contentAlignment = Alignment.TopEnd
+                        contentAlignment = Alignment.TopCenter
                     ) {
                         Text(
                             text = timeLabel,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -228,12 +230,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             repeat(shortDayNames.size + 1) { // Repeat for 6 dividers to make 7 columns
-//                                Text(
-//                                    text = "  ",
-//                                    modifier = Modifier
-//                                        .fillMaxHeight().border(1.dp, Color(0xFFCCCCCC))
-//                                )
-//                                  Box(modifier = Modifier.fillMaxHeight().border(1.dp, Color(0xFFCCCCCC)))
                                 VerticalDivider(
                                     color = Color(0xFFCCCCCC), // Vertical line color
                                     thickness = 1.dp, // Vertical line thickness
@@ -250,7 +246,6 @@ fun CalendarView(modifier: Modifier = Modifier) {
                             modifier = Modifier
                                 .height(1.dp)
                         )
-//                        Spacer(modifier = Modifier.height(60.dp)) // Height for each time slot row
                     }
                 }
             }
