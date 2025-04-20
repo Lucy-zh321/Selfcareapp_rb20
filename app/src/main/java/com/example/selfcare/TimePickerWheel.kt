@@ -41,7 +41,7 @@ fun TimePickerWheel(
     onMinuteChange: (Int) -> Unit
 ) {
     val visibleItems = 3
-    val cellHeight = 30.dp
+    val cellHeight = 24.dp
     val hourList = remember { (0..23).toList() }
     val minuteList = remember { (0..59).toList() }
 
@@ -178,6 +178,11 @@ fun TimePickerWheel(
         }
     }
 }
+
+
+
+
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewTimePickerWheel() {
