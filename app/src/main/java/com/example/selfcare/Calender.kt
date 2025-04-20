@@ -23,12 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -110,20 +105,22 @@ fun CalendarView(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Left arrow
-            IconButton(
-                onClick = { weekOffset-- },
-                modifier = Modifier.weight(0.1F)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Previous Week",
-                    modifier = Modifier.padding(0.dp),
-                )
-            }
+//            IconButton(
+//                onClick = { weekOffset-- },
+//                modifier = Modifier.weight(0.1F)
+//            ) {
+//                Icon(
+//                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+//                    contentDescription = "Previous Week",
+//                    modifier = Modifier.padding(0.dp),
+//                )
+//            }
+
+            Box(modifier = Modifier.weight(0.1F))
 
             // Day headers
             AnimatedContent(
-                modifier = Modifier.weight(0.8F),
+                modifier = Modifier.weight(0.9F),
                 targetState = weekDates,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith
@@ -168,15 +165,15 @@ fun CalendarView(modifier: Modifier = Modifier) {
             }
 
             // Right arrow
-            IconButton(
-                onClick = { weekOffset++ },
-                modifier = Modifier.weight(0.1F)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Next Week"
-                )
-            }
+//            IconButton(
+//                onClick = { weekOffset++ },
+//                modifier = Modifier.weight(0.1F)
+//            ) {
+//                Icon(
+//                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+//                    contentDescription = "Next Week"
+//                )
+//            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +209,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
             // Box for the grid that contains the vertical and horizontal lines
             Box(
                 modifier = Modifier
-                    .weight(0.8f)
+                    .weight(0.9f)
                     .clip(MaterialTheme.shapes.medium)
                     .background(Color(0xFFFFF0F4)) // Light pink background
                     .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium) // Outer border
@@ -249,7 +246,7 @@ fun CalendarView(modifier: Modifier = Modifier) {
                     }
                 }
             }
-            Spacer (modifier = Modifier.weight(0.1F))
+//            Spacer (modifier = Modifier.weight(0.1F))
         }
     }
 }
