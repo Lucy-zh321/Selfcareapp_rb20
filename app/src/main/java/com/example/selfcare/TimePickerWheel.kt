@@ -112,13 +112,13 @@ fun TimePickerWheel(
                 modifier = Modifier.width(80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 flingBehavior = rememberSnapFlingBehavior(hourState),
-//                contentPadding = PaddingValues(vertical = cellHeight)
+                contentPadding = PaddingValues(vertical = cellHeight)
             ) {
                 items(repeatedHours.size) { index ->
                     val hour = repeatedHours[index]
-                    val isSelected = index == hourCenteredIndex
+                    val isSelected = index + 1 == hourCenteredIndex
                     val animatedSize by animateDpAsState(
-                        targetValue = if (isSelected) 22.dp else 20.dp,
+                        targetValue = if (isSelected) 20.dp else 15.dp,
                         label = "HourSize"
                     )
                     val animatedAlpha by animateFloatAsState(
@@ -156,7 +156,7 @@ fun TimePickerWheel(
                     val minute = repeatedMinutes[index]
                     val isSelected = index + 1 == minuteCenteredIndex
                     val animatedSize by animateDpAsState(
-                        targetValue = if (isSelected) 22.dp else 20.dp,
+                        targetValue = if (isSelected) 20.dp else 15.dp,
                         label = "MinuteSize"
                     )
                     val animatedAlpha by animateFloatAsState(
