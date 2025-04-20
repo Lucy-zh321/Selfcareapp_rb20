@@ -87,13 +87,13 @@ fun TimePickerWheel(
     ) {
         // Selector lines (top & bottom)
         Column(modifier = Modifier.matchParentSize()) {
-            Spacer(modifier = Modifier.height(cellHeight - 6.dp))
+            Spacer(modifier = Modifier.height(cellHeight))
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = selectorLineThickness,
                 color = selectorLineColor
             )
-            Spacer(modifier = Modifier.height(cellHeight + 6.dp))
+            Spacer(modifier = Modifier.height(cellHeight))
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = selectorLineThickness,
@@ -112,28 +112,28 @@ fun TimePickerWheel(
                 modifier = Modifier.width(80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 flingBehavior = rememberSnapFlingBehavior(hourState),
-                contentPadding = PaddingValues(vertical = cellHeight)
+//                contentPadding = PaddingValues(vertical = cellHeight)
             ) {
                 items(repeatedHours.size) { index ->
                     val hour = repeatedHours[index]
-                    val isSelected = index + 1 == hourCenteredIndex
+                    val isSelected = index == hourCenteredIndex
                     val animatedSize by animateDpAsState(
-                        targetValue = if (isSelected) 24.dp else 20.dp,
+                        targetValue = if (isSelected) 22.dp else 20.dp,
                         label = "HourSize"
                     )
                     val animatedAlpha by animateFloatAsState(
                         targetValue = if (isSelected) 1f else 0.5f,
                         label = "HourAlpha"
                     )
-                    Text(
-                        text = hour.toString().padStart(2, '0'),
-                        modifier = Modifier
-                            .height(cellHeight)
-                            .width(60.dp),
-                        fontSize = with(LocalDensity.current) { animatedSize.toSp() },
-                        color = Color.Black.copy(alpha = animatedAlpha),
-                        textAlign = TextAlign.Center
-                    )
+                    Box(modifier = Modifier.height(cellHeight), contentAlignment = Alignment.Center){
+                        Text(
+                            text = hour.toString().padStart(2, '0'),
+                            modifier = Modifier.width(60.dp),
+                            fontSize = with(LocalDensity.current) { animatedSize.toSp() },
+                            color = Color.Black.copy(alpha = animatedAlpha),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
@@ -156,22 +156,23 @@ fun TimePickerWheel(
                     val minute = repeatedMinutes[index]
                     val isSelected = index + 1 == minuteCenteredIndex
                     val animatedSize by animateDpAsState(
-                        targetValue = if (isSelected) 24.dp else 20.dp,
+                        targetValue = if (isSelected) 22.dp else 20.dp,
                         label = "MinuteSize"
                     )
                     val animatedAlpha by animateFloatAsState(
                         targetValue = if (isSelected) 1f else 0.5f,
                         label = "MinuteAlpha"
                     )
-                    Text(
-                        text = minute.toString().padStart(2, '0'),
-                        modifier = Modifier
-                            .height(cellHeight)
-                            .width(60.dp),
-                        fontSize = with(LocalDensity.current) { animatedSize.toSp() },
-                        color = Color.Black.copy(alpha = animatedAlpha),
-                        textAlign = TextAlign.Center
-                    )
+                    Box(modifier = Modifier.height(cellHeight), contentAlignment = Alignment.Center){
+                        Text(
+                            text = minute.toString().padStart(2, '0'),
+                            modifier = Modifier
+                                .width(60.dp),
+                            fontSize = with(LocalDensity.current) { animatedSize.toSp() },
+                            color = Color.Black.copy(alpha = animatedAlpha),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }

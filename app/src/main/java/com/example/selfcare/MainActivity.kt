@@ -13,6 +13,7 @@ import com.example.selfcare.ui.theme.SelfCareTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -56,5 +57,13 @@ fun MainScreen(onAddTaskClick: () -> Unit) {
         Column(modifier = Modifier.padding(innerPadding)) {
             CalendarView()
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewMainScreen() {
+    SelfCareTheme {
+        MainScreen(onAddTaskClick = {})
     }
 }

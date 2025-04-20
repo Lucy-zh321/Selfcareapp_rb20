@@ -80,7 +80,10 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(text = "Start", style = MaterialTheme.typography.labelMedium)
+                    Box(modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomStart) {
+                        Text(text = "Start", style = MaterialTheme.typography.labelMedium)
+                    }
                     Box(
                         modifier = Modifier
                             .height(100.dp)
@@ -102,7 +105,10 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(text = "End", style = MaterialTheme.typography.labelMedium)
+                    Box(modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomStart){
+                        Text(text = "End", style = MaterialTheme.typography.labelMedium)
+                    }
                     Box(
                         modifier = Modifier
                             .height(100.dp)
