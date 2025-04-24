@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -41,15 +42,16 @@ fun TimePickerWheel(
     onMinuteChange: (Int) -> Unit
 ) {
     val visibleItems = 3
-    val cellHeight = 24.dp
+    val cellHeight = 30.dp
     val hourList = remember { (0..23).toList() }
     val minuteList = remember { (0..59).toList() }
 
     val repeatedHours = remember { List(100) { hourList }.flatten() }
     val repeatedMinutes = remember { List(100) { minuteList }.flatten() }
 
-    val hourState = rememberLazyListState(50 * hourList.size + selectedHour)
-    val minuteState = rememberLazyListState(50 * minuteList.size + selectedMinute)
+    val offsetPx = with(LocalDensity.current) { 4.dp.toPx() }.toInt()
+    val hourState = rememberLazyListState(50 * hourList.size + selectedHour, offsetPx)
+    val minuteState = rememberLazyListState(50 * minuteList.size + selectedMinute, offsetPx)
 
     // Helper function to get centered index
     fun getCenteredItemIndex(state: LazyListState): Int? {
@@ -87,7 +89,7 @@ fun TimePickerWheel(
     ) {
         // Selector lines (top & bottom)
         Column(modifier = Modifier.matchParentSize()) {
-            Spacer(modifier = Modifier.height(cellHeight))
+            Spacer(modifier = Modifier.height(cellHeight - 4.dp))
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = selectorLineThickness,
@@ -109,7 +111,7 @@ fun TimePickerWheel(
             // Hour Wheel
             LazyColumn(
                 state = hourState,
-                modifier = Modifier.width(80.dp),
+                modifier = Modifier.width(80.dp).clipToBounds(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 flingBehavior = rememberSnapFlingBehavior(hourState),
                 contentPadding = PaddingValues(vertical = cellHeight)

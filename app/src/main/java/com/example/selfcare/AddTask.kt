@@ -86,7 +86,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     }
                     Box(
                         modifier = Modifier
-                            .height(88.dp)
+                            .height(100.dp)
                             .fillMaxWidth()
                             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                             .padding(8.dp)
@@ -111,7 +111,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     }
                     Box(
                         modifier = Modifier
-                            .height(88.dp)
+                            .height(100.dp)
                             .fillMaxWidth()
                             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                             .padding(8.dp)
