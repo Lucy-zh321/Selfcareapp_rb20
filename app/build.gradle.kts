@@ -52,6 +52,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
+    implementation(libs.androidx.foundation)
+    implementation(libs.firebase.common.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -62,7 +64,19 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.activity)
     implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation ("androidx.compose.material3:material3:1.1.0" ) // for Material3
+    implementation ("androidx.compose.material:material:1.4.3")
+    implementation("com.google.accompanist:accompanist-pager:0.34.0")
+    implementation ("com.jakewharton.threetenabp:threetenabp:1.4.4")
+    implementation ("androidx.compose.material:material-icons-extended")
+    implementation ("androidx.compose.foundation:foundation:1.4.3")
+    implementation ("androidx.compose.ui:ui:1.4.3")
+    implementation ("androidx.compose.material3:material3:1.0.1")
+    implementation ("androidx.compose.material3:material3:1.0.1")
+    implementation ("com.google.accompanist:accompanist-pager:0.28.0")
+    implementation ("androidx.compose.foundation:foundation:1.3.0")
 
 
 
 }
+
