@@ -2,6 +2,17 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    
+}
+
+
+dependencies {
+    // Firebase BoM (Bill of Materials) for version management
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
+    // Firebase dependencies (no version needed when using BoM)
+    implementation("com.google.firebase:firebase-common-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")  // Example
 }
 
 android {
@@ -53,7 +64,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
     implementation(libs.androidx.foundation)
-    implementation(libs.firebase.common.ktx)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
