@@ -10,12 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.TextField
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.font.FontWeight
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.foundation.layout.Row
@@ -25,20 +22,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
-import com.example.selfcare.timeToMinutes
-import android. R. attr. onClick
 import org. threeten. bp. LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import android.app.Application
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.material.icons.filled.Check
+import android.util.Log
 import com.jakewharton.threetenabp.AndroidThreeTen
 import androidx. compose. ui. platform. LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import java.util.Locale
-
-
 
 class MyApp : Application() {
     override fun onCreate() {
@@ -59,6 +48,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
             isDateInitialized = true
         } catch (e: Exception) {
             isDateInitialized = true
+            Log.e("Add Task", "LaunchedEffect error occurred: ${e.message}", e)
         }
     }
 
@@ -102,6 +92,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
             try {
                 if (isDateInitialized) LocalDate.now() else LocalDate.of(2025, 8, 10)
             } catch (e: Exception) {
+                Log.e("Add Task", "selectedDate error occurred: ${e.message}", e)
                 LocalDate.of(2025, 8, 10) // Fallback date (October 8, 2025)
             }
         )
@@ -126,6 +117,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
             }
             "${selectedDate.dayOfMonth}/${month}/${selectedDate.year}"
         } catch (e: Exception) {
+            Log.e("Add Task", "currentDate error occurred: ${e.message}", e)
             "Select Date"
         }
     }
@@ -134,6 +126,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
         try {
             LocalDate.parse(currentDate).format(dateFormatter)
         } catch (e: Exception) {
+            Log.e("Add Task", "formatted error occurred: ${e.message}", e)
             currentDate // fallback to original if parsing fails
         }
     }
@@ -450,21 +443,18 @@ private fun timeToMinutes(time: String): Int {
         val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0 // Safe access and conversion
         hours * 60 + minutes
     } catch (e: Exception) {
+        Log.e("Add Task", "timeToMinutes error occurred: ${e.message}", e)
         0 // Fallback value
     }
 }
-private fun isStandardDuration(minutes: Int): Boolean {
+
+/*private fun isStandardDuration(minutes: Int): Boolean {
     return minutes in listOf(1, 15, 30, 45, 60, 90) // Matches your standard options
 }
 
 private fun calculateDuration(startTime: String, endTime: String): Int {
     return timeToMinutes(endTime) - timeToMinutes(startTime) // Uses your existing function
-}
-
-
-
-
-
+}*/
 
 
 

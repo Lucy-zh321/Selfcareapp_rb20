@@ -75,7 +75,7 @@ fun generateTimeOptions(): List<String> {
     val times = mutableListOf<String>()
     for (hour in 0..23) {
         for (minute in listOf(0, 15, 30, 45)) {
-            times.add(String.format("%02d:%02d", hour, minute))
+            times.add(String.format(Locale.getDefault(),"%02d:%02d", hour, minute))
         }
     }
     return times

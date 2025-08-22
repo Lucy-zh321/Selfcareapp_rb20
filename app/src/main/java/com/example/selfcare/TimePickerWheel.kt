@@ -1,7 +1,6 @@
 package com.example.selfcare
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
@@ -21,16 +20,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import java.util.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.foundation.gestures.ScrollScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
@@ -39,7 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx. compose. animation. core. spring
+import java.util.Locale
 
 @Composable
 fun TimePickerWheel(
@@ -102,7 +95,7 @@ fun TimePickerWheel(
                 selectedLength == "1" -> centeredTime.value // Just show the time for "1" selection
                 exactStartTime != null && !hasUserScrolled -> {
                     if (currentDurationMinutes.value != null) {
-                        "${exactStartTime} - ${minutesToTime(timeToMinutes(exactStartTime!!) + currentDurationMinutes.value!!)}"
+                        "$exactStartTime - ${minutesToTime(timeToMinutes(exactStartTime!!) + currentDurationMinutes.value!!)}"
                     } else {
                         "$exactStartTime - ${calculateEndTime(exactStartTime!!, selectedLength ?: "1h")}"
                     }
@@ -320,7 +313,7 @@ private fun formatTimeWithMinutes(time: String): String {
             val parts = time.split(":")
             val hours = parts[0].toInt().coerceIn(0, 23)
             val minutes = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-            String.format("%02d:%02d", hours, minutes)
+            String.format(Locale.getDefault(), "%02d:%02d", hours, minutes)
         } catch (e: Exception) {
             "00:00"
         }
@@ -340,7 +333,7 @@ private fun formatTimeWithMinutes(time: String): String {
 private fun minutesToTime(totalMinutes: Int): String {
     val hours = (totalMinutes / 60) % 24
     val minutes = totalMinutes % 60
-    return String.format("%02d:%02d", hours, minutes)
+    return String.format(Locale.getDefault(),"%02d:%02d", hours, minutes)
 }
 
 
