@@ -129,7 +129,7 @@ fun CustomRepeatDialog(
                     onConfirm(interval, selectedUnit, selectedDays, endCondition)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFFFFE0E0)
+                    contentColor = Color.Black
                 )
             ) {
                 Text("OK")
@@ -139,7 +139,7 @@ fun CustomRepeatDialog(
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color.Gray
+                    contentColor = Color.Black
                 )
             ) {
                 Text("Cancel")

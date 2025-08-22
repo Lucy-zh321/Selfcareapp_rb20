@@ -150,33 +150,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
     var repeatEndCondition by remember { mutableStateOf<EndCondition>(EndCondition.Never) }
 
 
-    val viewModel: TaskViewModel = viewModel()
 
-    fun saveTask() {
-        if (taskName.isBlank()) return // Simple validation
-
-        val newTask = Task(
-            name = taskName,
-            date = selectedDate,
-            startTime = selectedTime,
-            durationMinutes = durationMinutes ?: 30,
-            repeatInterval = repeatInterval,
-            repeatUnit = repeatUnit,
-            repeatDays = repeatDays,
-            repeatEndCondition = repeatEndCondition
-        )
-
-        viewModel.saveTask(newTask)
-        onBack() // Return to previous screen
-    }
-
-    // Add this to your existing Scaffold's FAB:
-    FloatingActionButton(
-        onClick = { saveTask() },
-        containerColor = Color(0xFFE91E63) // Match your theme
-    ) {
-        Icon(Icons.Default.Check, "Save Task")
-    }
 
     // UI Layout - Using Box as root container
     Box(modifier = Modifier.fillMaxSize()) {
