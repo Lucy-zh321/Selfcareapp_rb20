@@ -286,6 +286,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
             )
 
             // In your Repetition selector (AddTaskScreen.kt)
+            // In your Repetition selector (AddTaskScreen.kt)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -307,11 +308,11 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
                                     when (option) {
-                                        "Once" -> if (repeatInterval == 1 && repeatUnit == "Once" && repeatDays.isEmpty() && repeatEndCondition == EndCondition.Never && !showCustomRepeatDialog) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Daily" -> if (repeatInterval == 1 && repeatUnit == "Day" && repeatDays.isEmpty() && repeatEndCondition == EndCondition.Never && !showCustomRepeatDialog) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Weekly" -> if (repeatInterval == 1 && repeatUnit == "Week" && repeatDays.isEmpty() && repeatEndCondition == EndCondition.Never && !showCustomRepeatDialog) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Monthly" -> if (repeatInterval == 1 && repeatUnit == "Month" && repeatDays.isEmpty() && repeatEndCondition == EndCondition.Never && !showCustomRepeatDialog) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Custom" -> if (showCustomRepeatDialog || !(repeatInterval == 1 && repeatDays.isEmpty() && repeatEndCondition == EndCondition.Never)) Color(0xFFFFE0E0) else Color.Transparent
+                                        "Once" -> if (!showCustomRepeatDialog && repeatUnit == "Once") Color(0xFFFFE0E0) else Color.Transparent
+                                        "Daily" -> if (!showCustomRepeatDialog && repeatUnit == "Day" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
+                                        "Weekly" -> if (!showCustomRepeatDialog && repeatUnit == "Week" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
+                                        "Monthly" -> if (!showCustomRepeatDialog && repeatUnit == "Month" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
+                                        "Custom" -> if (showCustomRepeatDialog || (repeatUnit != "Once" && !(repeatInterval == 1 && repeatUnit in listOf("Day", "Week", "Month")))) Color(0xFFFFE0E0) else Color.Transparent
                                         else -> Color.Transparent
                                     }
                                 )
@@ -319,7 +320,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                     when (option) {
                                         "Once" -> {
                                             repeatInterval = 1
-                                            repeatUnit = "Once"
+                                            repeatUnit = "Once" // Special case for one-time task
                                             repeatDays = emptySet()
                                             repeatEndCondition = EndCondition.Never
                                             showCustomRepeatDialog = false
