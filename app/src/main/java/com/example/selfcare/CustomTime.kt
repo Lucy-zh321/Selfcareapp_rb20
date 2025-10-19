@@ -35,10 +35,11 @@ fun CustomRepeatDialog(
     initialDays: Set<Int>,
     initialEndCondition: EndCondition,
     onDismiss: () -> Unit,
-    onConfirm: (interval: Int, unit: String, days: Set<Int>, endCondition: EndCondition) -> Unit
+    onConfirm: (interval: Int, unit: String, days: Set<Int>, endCondition: EndCondition) -> Unit,
+    selectedColor: Color? = null
 ) {
     // State management
-    var interval by remember { mutableIntStateOf(1) }
+    var interval by remember { mutableStateOf(1) }
     var selectedUnit by remember { mutableStateOf("Week") }
     val selectedDays = remember { mutableStateSetOf<Int>() }
     var endCondition by remember { mutableStateOf<EndCondition>(EndCondition.Never) }

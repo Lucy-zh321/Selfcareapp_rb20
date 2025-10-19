@@ -42,7 +42,9 @@ fun TimePickerWheel(
     onTimeSelected: (String) -> Unit,
     onFinalTimeSelected: (String) -> Unit,
     calculateEndTime: (String, String) -> String,
-    onLengthChanged: (String) -> Unit
+    onLengthChanged: (String) -> Unit,
+    selectedColor: Color?
+
 ) {
     // Configuration
     val visibleItemCount = 5
@@ -218,7 +220,7 @@ fun TimePickerWheel(
                 .align(Alignment.Center)
                 .fillMaxWidth(0.7f)
                 .height(itemHeightDp * 1.3f)
-                .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                .background(getSelectedColor(selectedColor, Color(0xFFE0E0E0)), RoundedCornerShape(12.dp)) // Changed color
                 .clickable { showDialog.value = true }
                 .zIndex(1f),
             contentAlignment = Alignment.Center

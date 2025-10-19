@@ -1,5 +1,6 @@
 package com.example.selfcare
 
+import android.R.attr.label
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,8 +27,38 @@ import org. threeten. bp. LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import android.app.Application
 import android.util.Log
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import com.jakewharton.threetenabp.AndroidThreeTen
 import androidx. compose. ui. platform. LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.filled.Check
+import java.time.LocalTime
+
+
+// Add these data classes at the TOP of AddTaskScreen.kt (after imports)
+
+
+data class RepeatRule(
+    val frequency: String,
+    val daysOfWeek: Set<Int>? = null,
+    val endDate: String? = null
+)
+
+
+
+data class SubtaskItem(
+    val id: Int,
+    var text: String,
+    var isCompleted: Boolean = false
+)
+
 
 class MyApp : Application() {
     override fun onCreate() {
@@ -35,11 +66,13 @@ class MyApp : Application() {
         AndroidThreeTen.init(this)
     }
 }
+// Add this data class at the top level (outside of any function)
 
 @Composable
-fun AddTaskScreen(onBack: () -> Unit) {
+fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
     // SAFETY: Initialize ThreeTenABP properly
     val context = LocalContext.current
+
     var isDateInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -102,7 +135,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
         try {
             val month = when (selectedDate.monthValue) {
                 1 -> "01"
-            2 -> "02"
+                2 -> "02"
                 3 -> "03"
                 4 -> "04"
                 5 -> "05"
@@ -133,24 +166,69 @@ fun AddTaskScreen(onBack: () -> Unit) {
     var showDatePicker by remember { mutableStateOf(false) }
 
 
-
-
     // Add these with your other state declarations
     var showCustomRepeatDialog by remember { mutableStateOf(false) }
     var repeatInterval by remember { mutableStateOf(1) }
     var repeatUnit by remember { mutableStateOf("Week") }
     var repeatDays by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var repeatEndCondition by remember { mutableStateOf<EndCondition>(EndCondition.Never) }
+    var selectedColor by remember { mutableStateOf<Color?>(null) }
+
+
+    var showColorDialog by remember { mutableStateOf(false) }
+    var customColors by remember {
+        mutableStateOf(
+            listOf(
+                Color(0xFFFF8A80), // Coral Red
+                Color(0xFFFFB74D), // Peach Orange
+                Color(0xFFFFF176), // Soft Yellow
+                Color(0xFFAED581), // Mint Green
+                Color(0xFF64B5F6), // Sky Blue
+                Color(0xFFBA68C8), // Lavender Purple
+                Color(0xFFF48FB1), // Blush Pink
+                Color(0xFF4DD0E1)  // Aqua Cyan
+            )
+        )
+    }
+
+
+    // Add these with your other state declarations in AddTaskScreen
+    var dialogSelectedColor by remember { mutableStateOf(Color(0xFF64B5F6)) } // Color selected in the hexagon
+    var dialogMode by remember { mutableStateOf("Select") } // "Select" or "ChangeToPreset"
+    var dialogCustomColors by remember { mutableStateOf(customColors) } // Working copy of custom colors
+    var tempPresets by remember { mutableStateOf(dialogCustomColors.toMutableList()) } // Temp list for editing
+    var recentColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+
+    var notifications by remember { mutableStateOf<List<Pair<Int, String>>>(emptyList()) }
+    var showAddNotificationDialog by remember { mutableStateOf(false) }
+    var customNotificationTime by remember { mutableStateOf("") }
+    var customNotificationUnit by remember { mutableStateOf("minutes") }
+    var showNotificationOptionsDialog by remember { mutableStateOf(false) }
+    var showCustomNotificationDialog by remember { mutableStateOf(false) }
+    var mainNote by remember { mutableStateOf("") }
+    var subtasks by remember { mutableStateOf<List<SubtaskItem>>(emptyList()) }
 
 
 
+    // DELETE these lines (around line 140):
+
+    // Add this data class outside of AddTaskScreen
+
+    fun updateRecentColors(newColor: Color) {
+        recentColors = listOf(newColor) + recentColors.filter { it != newColor }
+        recentColors = recentColors.take(5) // Keep only the 5 most recent
+    }
 
     // UI Layout - Using Box as root container
     Box(modifier = Modifier.fillMaxSize()) {
+        val scrollState = rememberScrollState()
+
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(60.dp))
 
@@ -160,7 +238,10 @@ fun AddTaskScreen(onBack: () -> Unit) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(68.dp)
+                    .height(68.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = getSelectedColor(selectedColor, Color.White) // Changed background color
+                )
             ) {
                 Box(
                     modifier = Modifier
@@ -215,13 +296,15 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     },
                     calculateEndTime = ::calculateEndTime,
                     onLengthChanged = { newLength ->
-                        manualTimeRange = if (isCustomDuration(selectedLength) && isCustomDuration(newLength)) {
-                            manualTimeRange
-                        } else {
-                            null
-                        }
+                        manualTimeRange =
+                            if (isCustomDuration(selectedLength) && isCustomDuration(newLength)) {
+                                manualTimeRange
+                            } else {
+                                null
+                            }
                         selectedLength = newLength
-                    }
+                    },
+                    selectedColor = selectedColor
                 )
             }
 
@@ -264,7 +347,9 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     selectedLength = newLength
                     manualTimeRange = null
                 },
-                options = lengthOptions
+                options = lengthOptions,
+                selectedColor = selectedColor, // Add this parameter
+                isCustomDuration = isCustomDuration
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -301,11 +386,15 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
                                     when (option) {
-                                        "Once" -> if (!showCustomRepeatDialog && repeatUnit == "Once") Color(0xFFFFE0E0) else Color.Transparent
-                                        "Daily" -> if (!showCustomRepeatDialog && repeatUnit == "Day" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Weekly" -> if (!showCustomRepeatDialog && repeatUnit == "Week" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Monthly" -> if (!showCustomRepeatDialog && repeatUnit == "Month" && repeatInterval == 1) Color(0xFFFFE0E0) else Color.Transparent
-                                        "Custom" -> if (showCustomRepeatDialog || (repeatUnit != "Once" && !(repeatInterval == 1 && repeatUnit in listOf("Day", "Week", "Month")))) Color(0xFFFFE0E0) else Color.Transparent
+                                        "Once" -> if (repeatUnit == "Once") getSelectedColor(selectedColor).copy(alpha = 0.3f) else Color.Transparent
+                                        "Daily" -> if (repeatUnit == "Day" && repeatInterval == 1 && repeatDays.isEmpty()) getSelectedColor(selectedColor).copy(alpha = 0.3f) else Color.Transparent
+                                        "Weekly" -> if (repeatUnit == "Week" && repeatInterval == 1 && repeatDays.isEmpty()) getSelectedColor(selectedColor).copy(alpha = 0.3f) else Color.Transparent
+                                        "Monthly" -> if (repeatUnit == "Month" && repeatInterval == 1 && repeatDays.isEmpty()) getSelectedColor(selectedColor).copy(alpha = 0.3f) else Color.Transparent
+                                        "Custom" -> if (repeatUnit != "Once" &&
+                                            !(repeatUnit == "Day" && repeatInterval == 1 && repeatDays.isEmpty()) &&
+                                            !(repeatUnit == "Week" && repeatInterval == 1 && repeatDays.isEmpty()) &&
+                                            !(repeatUnit == "Month" && repeatInterval == 1 && repeatDays.isEmpty())
+                                        ) getSelectedColor(selectedColor).copy(alpha = 0.3f) else Color.Transparent
                                         else -> Color.Transparent
                                     }
                                 )
@@ -313,11 +402,12 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                     when (option) {
                                         "Once" -> {
                                             repeatInterval = 1
-                                            repeatUnit = "Once" // Special case for one-time task
+                                            repeatUnit = "Once"
                                             repeatDays = emptySet()
                                             repeatEndCondition = EndCondition.Never
                                             showCustomRepeatDialog = false
                                         }
+
                                         "Daily" -> {
                                             repeatInterval = 1
                                             repeatUnit = "Day"
@@ -325,6 +415,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                             repeatEndCondition = EndCondition.Never
                                             showCustomRepeatDialog = false
                                         }
+
                                         "Weekly" -> {
                                             repeatInterval = 1
                                             repeatUnit = "Week"
@@ -332,6 +423,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                             repeatEndCondition = EndCondition.Never
                                             showCustomRepeatDialog = false
                                         }
+
                                         "Monthly" -> {
                                             repeatInterval = 1
                                             repeatUnit = "Month"
@@ -339,6 +431,7 @@ fun AddTaskScreen(onBack: () -> Unit) {
                                             repeatEndCondition = EndCondition.Never
                                             showCustomRepeatDialog = false
                                         }
+
                                         "Custom" -> showCustomRepeatDialog = true
                                     }
                                 },
@@ -354,6 +447,310 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+
+// Color Selector with three dots on the right
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Color",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .weight(1f)
+                )
+
+                // Three dots on the right side (above the box)
+                IconButton(
+                    onClick = { showColorDialog = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("⋯", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp) // Slightly smaller height
+                    .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val colors = listOf(
+                        Color(0xFFFF8A80), // Coral Red
+                        Color(0xFFFFB74D), // Peach Orange
+                        Color(0xFFFFF176), // Soft Yellow
+                        Color(0xFFAED581), // Mint Green
+                        Color(0xFF64B5F6), // Sky Blue
+                        Color(0xFFBA68C8), // Lavender Purple
+                        Color(0xFFF48FB1), // Blush Pink
+                        Color(0xFF4DD0E1)
+                    )
+
+                    // Display the 8 preset colors + recent colors
+                    val allColorsToShow = remember(recentColors, customColors, selectedColor) {
+                        val recent = recentColors.filter { it !in customColors }
+                        (recent + customColors).distinct()
+                            .take(8) // Ensure we only show 8 colors max
+                    }
+
+                    allColorsToShow.forEach { color ->
+                        val isSelected = color == selectedColor
+                        ColorCircle(
+                            color = color,
+                            isSelected = isSelected,
+                            onSelected = {
+                                val newSelection = if (selectedColor == color) null else color
+                                selectedColor = newSelection
+                                newSelection?.let { selectedColorValue ->
+                                    updateRecentColors(selectedColorValue) // This will now work!
+                                    dialogSelectedColor =
+                                        selectedColorValue // Update dialog selection too
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+            }
+            // Notifications Section
+            // Notifications Section
+            // Notifications Section
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Notifications",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                // Display each notification in its own box with friendly text
+                notifications.forEachIndexed { index, (time, unit) ->
+                    val displayText = when {
+                        unit == "at_start" -> "At start of task"
+                        time == 1 && unit == "hours" -> "1 hour before"
+                        time == 1 && unit == "minutes" -> "1 minute before"
+                        time == 1 && unit == "days" -> "1 day before"
+                        time == 1 && unit == "weeks" -> "1 week before"
+                        else -> "$time ${unit} before"
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Notification",
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.DarkGray // Or Color.Gray for a neutral look
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = displayText,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove notification",
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable {
+                                        notifications = notifications.toMutableList().apply { removeAt(index) }
+                                    }
+                            )
+                        }
+                    }
+
+                    // Add spacing after each notification box
+                    if (index < notifications.size - 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                // Add space before the add button if there are existing notifications
+                if (notifications.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Add notification button in its own box
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                        .clickable { showNotificationOptionsDialog = true }
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add notification",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Add notification",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+// Details Section
+            Text(
+                text = "Details",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color.Gray, RoundedCornerShape(12.dp)) // Curved corners for the whole box
+            ) {
+                Column {
+                    // Pink Header Bar with + Add Subtask
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(getSelectedColor(selectedColor), RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)) // Changed color
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable {
+                                    // Generate unique ID for new subtask
+                                    val newId = subtasks.maxOfOrNull { it.id }?.plus(1) ?: 0
+                                    subtasks = subtasks + SubtaskItem(id = newId, text = "")
+                                }
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add subtask",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Add Subtask",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Subtasks List
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        subtasks.forEachIndexed { index, subtask ->
+                            SubtaskRow(
+                                subtask = subtask,
+                                selectedColor = selectedColor, // Pass the selected color
+                                onTextChanged = { newText ->
+                                    subtasks = subtasks.mapIndexed { i, item ->
+                                        if (i == index) item.copy(text = newText) else item
+                                    }
+                                },
+                                onCompletedChanged = { completed ->
+                                    subtasks = subtasks.mapIndexed { i, item ->
+                                        if (i == index) item.copy(isCompleted = completed) else item
+                                    }
+                                },
+                                onDelete = {
+                                    subtasks = subtasks.filterIndexed { i, _ -> i != index }
+                                }
+                            )
+                        }
+
+                        // Main Notes Text Field
+                        // Main Notes Text Field - made smaller
+                        BasicTextField(
+                            value = mainNote,
+                            onValueChange = { mainNote = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
+                                .height(120.dp), // Set a fixed height for multi-line
+                            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                            decorationBox = { innerTextField ->
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.TopStart // This makes text start from top
+                                ) {
+                                    if (mainNote.isEmpty()) {
+                                        Text(
+                                            "Add detailed notes about your task...",
+                                            fontSize = 14.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            },
+                            maxLines = 4
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            // Add this composable function outside of AddTaskScreen
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Save Task",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(getSelectedColor(selectedColor), CircleShape)
+                        .clickable {
+                            val newTask = createTaskFromInput(
+                                taskName = taskName,
+                                selectedTime = selectedTime,
+                                selectedDate = selectedDate,
+                                selectedColor = selectedColor,
+                                repeatUnit = repeatUnit,
+                                repeatDays = repeatDays,
+                                repeatEndCondition = repeatEndCondition
+                            )
+                            onTaskAdded(newTask)
+                            onBack()
+                        }
+                        .padding(12.dp),
+                    tint = Color.White
+                )
+            }
+
         }
 
         if (showCustomRepeatDialog) {
@@ -369,7 +766,8 @@ fun AddTaskScreen(onBack: () -> Unit) {
                     repeatDays = days
                     repeatEndCondition = endCondition
                     showCustomRepeatDialog = false
-                }
+                },
+                selectedColor = selectedColor
             )
         }
 
@@ -429,11 +827,159 @@ fun AddTaskScreen(onBack: () -> Unit) {
                 onDismiss = { showDatePicker = false }
             )
         }
+        if (showColorDialog) {
+            ColorCustomizationDialog(
+                selectedColor = dialogSelectedColor,
+                onColorSelected = { newColor -> dialogSelectedColor = newColor },
+                mode = dialogMode,
+                onModeChanged = { newMode -> dialogMode = newMode },
+                customColors = tempPresets,
+                onPresetRemoved = { index ->
+                    tempPresets = tempPresets.toMutableList().apply { removeAt(index) }
+                },
+                onPresetAdded = { index, color ->
+                    tempPresets = tempPresets.toMutableList().apply { add(index, color) }
+                },
+                onConfirm = {
+                    dialogCustomColors = tempPresets
+                    customColors = tempPresets
+                    showColorDialog = false
+                },
+                onDismiss = {
+                    showColorDialog = false
+                    tempPresets = dialogCustomColors.toMutableList() // Reset on cancel
+                }
+            )
+        }
+        if (showCustomNotificationDialog) {
+            AlertDialog(
+                onDismissRequest = { showCustomNotificationDialog = false },
+                title = { Text("Custom Alert Time") },
+                text = {
+                    Column {
+                        // Text input
+                        OutlinedTextField(
+                            value = customNotificationTime,
+                            onValueChange = { customNotificationTime = it },
+                            label = { Text("Time amount") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Radio buttons for units
+                        Column {
+                            listOf("minutes", "hours", "days", "weeks").forEach { unit ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { customNotificationUnit = unit }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    RadioButton(
+                                        selected = customNotificationUnit == unit,
+                                        onClick = { customNotificationUnit = unit }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("$unit before")
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val time = customNotificationTime.toIntOrNull() ?: 0
+                            if (time > 0) {
+                                notifications = notifications + Pair(time, customNotificationUnit)
+                                customNotificationTime = ""
+                                showCustomNotificationDialog = false // Auto-close on add
+                            }
+                        }
+                    ) {
+                        Text("Add")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showCustomNotificationDialog = false // Just close, no action
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
+    if (showNotificationOptionsDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotificationOptionsDialog = false },
+            title = { Text("Add Notification") },
+            text = {
+                Column {
+                    val quickOptions = listOf(
+                        Pair("At start of task", Pair(0, "at_start")),
+                        Pair("5 minutes before", Pair(5, "minutes")),
+                        Pair("15 minutes before", Pair(15, "minutes")),
+                        Pair("30 minutes before", Pair(30, "minutes")),
+                        Pair("1 hour before", Pair(1, "hours")),
+                        Pair("Custom...", Pair(0, "custom"))
+                    )
+
+                    quickOptions.forEach { (label, timeUnitPair) ->
+                        val (time, unit) = timeUnitPair
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (unit == "custom") {
+                                        showNotificationOptionsDialog = false
+                                        showCustomNotificationDialog = true
+                                    } else {
+                                        notifications = notifications + Pair(time, unit)
+                                        showNotificationOptionsDialog = false
+                                    }
+                                }
+                                .padding(vertical = 12.dp)
+                        ) {
+                            RadioButton(
+                                selected = false,
+                                onClick = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showNotificationOptionsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    // Add this at the bottom of your Column (before the last closing brace)
+    Spacer(modifier = Modifier.height(16.dp))
+
+// Save Button
+
 }
 
 
 
+/**
+ * Adds a color to the recent list, moving it to the front.
+ * Removes duplicates and keeps the list to a manageable size.
+ */
 
 // Helper functions
 private fun timeToMinutes(time: String): Int {
@@ -456,13 +1002,70 @@ private fun calculateDuration(startTime: String, endTime: String): Int {
     return timeToMinutes(endTime) - timeToMinutes(startTime) // Uses your existing function
 }*/
 
+@Composable
+fun SubtaskRow(
+    subtask: SubtaskItem,
+    selectedColor: Color?, // Add this parameter
+    onTextChanged: (String) -> Unit,
+    onCompletedChanged: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = subtask.isCompleted,
+            onCheckedChange = onCompletedChanged,
+            colors = CheckboxDefaults.colors(
+                checkedColor = getSelectedColor(selectedColor) // Use the utility function
+            ),
+            modifier = Modifier.size(20.dp)
+        )
 
+        Spacer(modifier = Modifier.width(4.dp))
+
+        BasicTextField(
+            value = subtask.text,
+            onValueChange = onTextChanged,
+            modifier = Modifier
+                .weight(1f)
+                .height(36.dp)
+                .padding(vertical = 8.dp),
+            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+            singleLine = true,
+            decorationBox = { innerTextField ->
+                Column {
+                    innerTextField()
+                    Divider(
+                        color = if (subtask.text.isNotEmpty()) getSelectedColor(selectedColor) else Color.Gray,
+                        thickness = 1.dp
+                    )
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Delete subtask",
+            modifier = Modifier
+                .size(18.dp)
+                .clickable { onDelete() },
+            tint = Color.Gray
+        )
+    }
+}
 
 @Composable
 fun LengthSelector(
     selectedOption: String?,
     onLengthSelected: (String) -> Unit,
     options: List<String>,
+    selectedColor: Color?,
     isCustomDuration: Boolean = false // NEW: Track if duration is custom
 ) {
     Column {
@@ -491,11 +1094,8 @@ fun LengthSelector(
                             .clip(RoundedCornerShape(16.dp))
                             .background(
                                 when {
-                                    // Bright pink for custom duration matches
-                                    isCustomDuration && selectedOption == label -> Color(0xFFFFC0CB)
-                                    // Light pink for standard selection
-                                    selectedOption == label -> Color(0xFFFFE0E0)
-                                    // Transparent for unselected
+                                    isCustomDuration && selectedOption == label -> getSelectedColor(selectedColor).copy(alpha = 0.8f)
+                                    selectedOption == label -> getSelectedColor(selectedColor).copy(alpha = 0.3f)
                                     else -> Color.Transparent
                                 }
                             )
@@ -514,6 +1114,11 @@ fun LengthSelector(
     }
 }
 
+// Add this at the bottom of AddTaskScreen.kt (outside the composable)
+// Replace the createTaskFromInput function at the bottom with this:
+
+
+
 private fun formatMinutesToDuration(minutes: Int): String {
     return when {
         minutes < 60 -> "${minutes}m"
@@ -528,4 +1133,15 @@ private fun parseDurationToMinutes(duration: String): Int? {
         duration.endsWith("m") -> duration.removeSuffix("m").toIntOrNull()
         else -> duration.toIntOrNull()
     }
+}
+// Add this function at the top level (outside any composable)
+@Composable
+fun getSelectedColor(selectedColor: Color?, defaultColor: Color = Color(0xFF64B5F6)): Color {
+    return selectedColor ?: defaultColor
+}
+
+// For alpha variants
+@Composable
+fun getSelectedColorWithAlpha(selectedColor: Color?, alpha: Float = 0.3f): Color {
+    return getSelectedColor(selectedColor).copy(alpha = alpha)
 }

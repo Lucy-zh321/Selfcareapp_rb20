@@ -64,6 +64,8 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.ui.text)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

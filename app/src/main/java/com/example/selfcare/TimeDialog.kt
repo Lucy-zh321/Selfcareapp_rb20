@@ -15,17 +15,10 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyListState
 import kotlin.math.abs
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.items  // For items() function
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -58,91 +51,6 @@ private fun calculateDuration(startHour: Int, startMinute: Int, endHour: Int, en
         endTotal - startTotal
     } else {
         (24 * 60 - startTotal) + endTotal
-    }
-}
-
-
-@Composable
-fun <T> SyncedTimePickerWheel(
-    items: List<T>,
-    selectedItem: T,
-    onItemSelected: (T) -> Unit,
-    format: (T) -> String,
-    listState: LazyListState,
-    modifier: Modifier = Modifier,
-    visibleItemsCount: Int = 5,
-    itemHeight: Dp = 40.dp
-) {
-    val halfVisible = visibleItemsCount / 2
-    val contentPadding = itemHeight * halfVisible
-    val coroutineScope = rememberCoroutineScope()
-
-    // Center selected item on launch or when value changes
-    LaunchedEffect(selectedItem) {
-        val index = items.indexOf(selectedItem)
-        if (index != -1) {
-            listState.animateScrollToItem(index)
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .height(itemHeight * visibleItemsCount)
-            .width(60.dp)
-    ) {
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(vertical = contentPadding),
-            flingBehavior = rememberSnapFlingBehavior(listState),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(items) { index, item ->
-                val isSelected = item == selectedItem
-                Box(
-                    modifier = Modifier
-                        .height(itemHeight)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = format(item),
-                        color = if (isSelected) Color.Black else Color.Gray,
-                        fontSize = if (isSelected) 20.sp else 16.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            }
-        }
-
-        // Center highlight box
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .height(itemHeight)
-                .fillMaxWidth()
-                .border(2.dp, Color.Blue, RectangleShape)
-        )
-
-        // Snap to nearest on scroll stop
-        LaunchedEffect(listState) {
-            snapshotFlow { listState.isScrollInProgress }
-                .distinctUntilChanged()
-                .filter { !it }
-                .collectLatest {
-                    val layoutInfo = listState.layoutInfo
-                    val center = layoutInfo.viewportStartOffset + layoutInfo.viewportSize.height / 2
-                    val closest = layoutInfo.visibleItemsInfo.minByOrNull { item ->
-                        val itemCenter = item.offset + item.size / 2
-                        abs(itemCenter - center)
-                    }
-                    closest?.let {
-                        coroutineScope.launch {
-                            listState.animateScrollToItem(it.index)
-                            onItemSelected(items[it.index])
-                        }
-                    }
-                }
-        }
     }
 }
 
@@ -383,73 +291,6 @@ fun TimeWheel(
     }
 }
 
-
-@Composable
-fun NumberPicker(
-    numbers: List<Int>,
-    selected: Int,
-    onSelect: (Int) -> Unit
-) {
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = numbers.indexOf(selected).coerceAtLeast(0))
-    val itemHeight = 50.dp
-    val visibleCount = 5
-
-    LaunchedEffect(selected) {
-        val index = numbers.indexOf(selected)
-        if (index >= 0) listState.scrollToItem(index)
-    }
-
-    Box(
-        modifier = Modifier
-            .height(itemHeight * visibleCount)
-            .width(70.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(vertical = itemHeight * (visibleCount / 2)),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(numbers) { number ->
-                Box(
-                    modifier = Modifier
-                        .height(itemHeight)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = number.toString().padStart(2, '0'),
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = if (number == selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (number == selected) Color.Black else Color.Gray
-                        )
-                    )
-                }
-            }
-        }
-
-        // Snap to center item and update selection
-        LaunchedEffect(listState) {
-            snapshotFlow { listState.isScrollInProgress }
-                .filter { !it }
-                .collectLatest {
-                    val layoutInfo = listState.layoutInfo
-                    val visibleItems = layoutInfo.visibleItemsInfo
-                    if (visibleItems.isNotEmpty()) {
-                        val center = layoutInfo.viewportStartOffset + layoutInfo.viewportSize.height / 2
-                        val closest = visibleItems.minByOrNull {
-                            val itemCenter = it.offset + it.size / 2
-                            abs(itemCenter - center)
-                        }
-                        closest?.let {
-                            listState.animateScrollToItem(it.index)
-                            onSelect(numbers[it.index])
-                        }
-                    }
-                }
-        }
-    }
-}
 
 
 

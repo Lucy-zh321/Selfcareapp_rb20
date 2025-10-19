@@ -1,9 +1,10 @@
 package com.example.selfcare
 
+
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-
+import androidx.compose.ui.graphics.Color
 fun calculateEndTime(startTime: String, lengthLabel: String): String {
     return try {
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -118,4 +119,11 @@ fun roundToNearestStandard(minute: Int): Int {
         minute >= 60 -> hour to 59
         else -> hour to minute
     }
+}
+
+
+
+// Add this at the top level (outside any function)
+fun getSelectedColor(selectedColor: Color?): Color {
+    return selectedColor ?: Color(0xFFFFB6C1) // Fallback to original pink if no color selected
 }

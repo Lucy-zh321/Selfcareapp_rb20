@@ -1,5 +1,7 @@
 package com.example.selfcare
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,17 +20,25 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -39,22 +50,53 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.selfcare.ui.theme.SelfCareTheme
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.max
 
+//private val String.hour: Any
+
+data class Task(
+    val id: Long,
+    val name: String,
+    val startTime: String,
+    val endTime: String,
+    val color: Color,
+    val date: String,
+    val repeatRule: RepeatRule? = null
+)
+
+
+
+
+// Add this to CalendarView.kt or create a new Models.kt file
+
+
+
+// REPLACE your existing CalendarView composable with this:
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarView(modifier: Modifier = Modifier) {
+fun CalendarView(
+    tasks: List<Task> = emptyList(),
+    onAddTask: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     var weekOffset by remember { mutableIntStateOf(0) }
-
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
 
     val currentYear = calendar.get(Calendar.YEAR)
     val currentMonth = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault())
-
     val today = Calendar.getInstance()
 
     // Get Monday of this week
@@ -74,186 +116,531 @@ fun CalendarView(modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
     val shortDayNames = listOf("M", "T", "W", "T", "F", "S", "S")
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(0.dp)
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    if (dragAmount > 50) {
-                        weekOffset-- // swipe right -> previous week
-                    } else if (dragAmount < -50) {
-                        weekOffset++ // swipe left -> next week
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val hourBlockHeight = 80.dp
+        val timeLabelWidth = 45.dp
+
+        val dayColumnWidth = remember(maxWidth) {
+            val totalAvailableWidth = maxWidth - timeLabelWidth
+            totalAvailableWidth / 7f
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { _, dragAmount ->
+                        if (dragAmount > 50) weekOffset--
+                        else if (dragAmount < -50) weekOffset++
                     }
                 }
-            }
-    ) {
-        // Month and Year
-        Text(
-            text = "$currentMonth $currentYear",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-
-        // Days of Week Header with arrows
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left arrow
-//            IconButton(
-//                onClick = { weekOffset-- },
-//                modifier = Modifier.weight(0.1F)
-//            ) {
-//                Icon(
-//                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-//                    contentDescription = "Previous Week",
-//                    modifier = Modifier.padding(0.dp),
-//                )
-//            }
+            // FIXED HEADER SECTION - Doesn't scroll
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.LightGray.copy(alpha = 0.3f))
+            ) {
+                // Month and Year
+                Text(
+                    text = "$currentMonth $currentYear",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                )
 
-            Box(modifier = Modifier.weight(0.1F))
-
-            // Day headers
-            AnimatedContent(
-                modifier = Modifier.weight(0.9F),
-                targetState = weekDates,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith
-                            fadeOut(animationSpec = tween(300))
-                }
-            ) { animatedWeekDates ->
+                // Days of Week Header
                 Row(
-                    horizontalArrangement = Arrangement.SpaceAround) {
-                    animatedWeekDates.forEachIndexed { index, (date, month, year) ->
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = timeLabelWidth, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    weekDates.forEachIndexed { index, (date, month, year) ->
                         val isToday = date == today.get(Calendar.DAY_OF_MONTH) &&
                                 month == today.get(Calendar.MONTH) &&
                                 year == today.get(Calendar.YEAR)
 
-                        Column(
+                        Box(
                             modifier = Modifier
-                                .width(30.dp) // Fixed width for each day column
-                                .padding(horizontal = 0.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .width(dayColumnWidth),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = shortDayNames[index],
-                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(30.dp) // Set a fixed size for the circle
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isToday) Color(0xFFF9C8D9) else Color.Transparent
-                                    ),
-                                contentAlignment = Alignment.Center
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = date.toString(),
-                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                    text = shortDayNames[index],
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.padding(bottom = 4.dp)
                                 )
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isToday) Color(0xFFF9C8D9) else Color.Transparent
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = date.toString(),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 16.sp
+                                    )
+                                }
                             }
                         }
-
                     }
                 }
             }
 
-            // Right arrow
-//            IconButton(
-//                onClick = { weekOffset++ },
-//                modifier = Modifier.weight(0.1F)
-//            ) {
-//                Icon(
-//                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-//                    contentDescription = "Next Week"
-//                )
-//            }
-        }
+            // Faint black line at the bottom of the header
+            Divider(
+                color = Color.Black.copy(alpha = 0.1f),
+                thickness = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Time Grid
-
-        // Time + Grid section
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp)
-                .verticalScroll(scrollState)
-        ) {
-
-            // Time labels
-            Column (
-                modifier = Modifier.weight(0.1F),
-                horizontalAlignment = Alignment.CenterHorizontally){
-                timeSlots.forEach { timeLabel ->
-                    Box(
-                        modifier = Modifier
-                            .height(60.dp),
-                        contentAlignment = Alignment.TopCenter
-                    ) {
-                        Text(
-                            text = timeLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-            }
-
-            // Box for the grid that contains the vertical and horizontal lines
+            // SCROLLABLE CONTENT SECTION - Both white gap and grid scroll together
             Box(
                 modifier = Modifier
-                    .weight(0.9f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(Color(0xFFFFF0F4)) // Light pink background
-                    .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium) // Outer border
-                    .padding(0.dp) // Padding inside to keep lines from touching the outer box
+                    .fillMaxSize()
+                    .weight(1f)
             ) {
-                // Horizontal lines (time slot separators)
-                Column {
-                    repeat(timeSlots.size) { index ->
-                        // Vertical lines (day separators) for 7 columns (6 dividers)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(59.dp)
-                                .padding(top = 0.dp), // Add top padding to give space
-                            horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                ) {
+                    // WHITE GAP - Now part of scrollable content
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // GRID SECTION - Scrolls with the white gap
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        // Time labels
+                        Column(
+                            modifier = Modifier.width(timeLabelWidth),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            repeat(shortDayNames.size + 1) { // Repeat for 6 dividers to make 7 columns
-                                VerticalDivider(
-                                    color = Color(0xFFCCCCCC), // Vertical line color
-                                    thickness = 1.dp, // Vertical line thickness
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .width(1.dp) // Make vertical lines 1 dp wide
-                                        .padding(horizontal = 0.dp) // Padding between the lines
-                                )
+                            timeSlots.forEach { timeLabel ->
+                                Box(
+                                    modifier = Modifier.height(hourBlockHeight),
+                                    contentAlignment = Alignment.TopCenter
+                                ) {
+                                    Text(
+                                        text = timeLabel,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = 14.sp
+                                    )
+                                }
                             }
                         }
-                        HorizontalDivider(
-                            color = Color(0xFFCCCCCC), // Horizontal separator color
-                            thickness = 1.dp,
+
+                        // Grid
+                        Box(
                             modifier = Modifier
-                                .height(1.dp)
-                        )
+                                .width(dayColumnWidth * 7f)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(Color(0xFFFFF0F4))
+                                .border(1.dp, Color(0xFFB0B0B0), MaterialTheme.shapes.medium)
+                        ) {
+                            // Grid lines
+                            Column {
+                                repeat(timeSlots.size) { index ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(hourBlockHeight - 1.dp)
+                                    ) {
+                                        repeat(7) { columnIndex ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(dayColumnWidth)
+                                                    .fillMaxHeight()
+                                            ) {
+                                                // Column content
+                                            }
+                                            if (columnIndex < 6) {
+                                                VerticalDivider(
+                                                    color = Color(0xFFCCCCCC),
+                                                    thickness = 1.dp,
+                                                    modifier = Modifier.fillMaxHeight()
+                                                )
+                                            }
+                                        }
+                                    }
+                                    HorizontalDivider(
+                                        color = Color(0xFFCCCCCC),
+                                        thickness = 1.dp,
+                                        modifier = Modifier.height(1.dp)
+                                    )
+                                }
+                            }
+
+                            // Tasks overlay
+                            // In your CalendarView, find the task positioning section and replace it with this:
+
+// Tasks overlay - FIXED: Precise positioning within grid cells
+                            // In CalendarView task positioning:
+                            Box(modifier = Modifier.matchParentSize()) {
+                                val currentWeekTasks = remember(weekDates, tasks) {
+                                    tasks.filter { task ->
+                                        isTaskInWeek(task, weekDates)
+                                    }
+                                }
+
+                                currentWeekTasks.forEach { task ->
+                                    val dayIndex = getDayIndexForTask(task, weekDates)
+                                    if (dayIndex != -1) {
+                                        // Position with the right offset (about 4 pixels = 3.dp)
+                                        val xPosition = dayColumnWidth * dayIndex + 6.dp
+
+                                        TaskBox(
+                                            task = task,
+                                            hourBlockHeight = hourBlockHeight,
+                                            dayColumnWidth = dayColumnWidth,
+                                            modifier = Modifier.offset(x = xPosition)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
+                // Floating Action Button - Fixed position in scrollable area
+                FloatingActionButton(
+                    onClick = onAddTask,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(20.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Task")
+                }
             }
-//            Spacer (modifier = Modifier.weight(0.1F))
         }
     }
 }
-@Preview(showBackground = true)
+// Helper function to determine which day column a task belongs to
+
+
 @Composable
-fun PreviewCalendar() {
-    SelfCareTheme {
-        CalendarView()
+fun TaskBox(
+    task: Task,
+    hourBlockHeight: Dp,
+    dayColumnWidth: Dp,
+    modifier: Modifier = Modifier
+) {
+    // Parse String times to get hours and minutes
+    val startParts = task.startTime.split(":")
+    val endParts = task.endTime.split(":")
+
+    val startHour = startParts[0].toIntOrNull() ?: 0
+    val startMinute = startParts.getOrNull(1)?.toIntOrNull() ?: 0
+    val endHour = endParts[0].toIntOrNull() ?: 0
+    val endMinute = endParts.getOrNull(1)?.toIntOrNull() ?: 0
+
+    // Calculate total minutes from start of day
+    val startTotalMinutes = startHour * 60 + startMinute
+    val endTotalMinutes = endHour * 60 + endMinute
+
+    // Calculate duration in minutes
+    val durationMinutes = if (endTotalMinutes >= startTotalMinutes) {
+        endTotalMinutes - startTotalMinutes
+    } else {
+        // Handle overnight tasks (end time next day)
+        (24 * 60 - startTotalMinutes) + endTotalMinutes
+    }
+
+    // FIXED: Calculate proportional height and position correctly
+    val minutesPerHourBlock = 60f
+    val boxHeight = hourBlockHeight * (durationMinutes / minutesPerHourBlock)
+    val topOffset = hourBlockHeight * (startTotalMinutes / minutesPerHourBlock)
+
+    // Minimal font sizes
+    val timeFontSize = 9.sp
+    val taskFontSize = 10.sp
+    val timeText = "${task.startTime}-${task.endTime}"
+
+    Box(
+        modifier = modifier
+            .width(dayColumnWidth - 2.dp) // Fit between vertical grid lines
+            .height(boxHeight - 2.dp) // Fit between horizontal grid lines
+            .offset(y = topOffset + 1.dp) // Start after top grid line
+            .background(
+                task.color,
+                RoundedCornerShape(4.dp)
+            )
+            .border(
+                1.dp,
+                Color.DarkGray,
+                RoundedCornerShape(4.dp)
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 2.dp, vertical = 1.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Time at the top
+            Text(
+                text = timeText,
+                color = Color.Black,
+                fontSize = timeFontSize,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                softWrap = false
+            )
+
+            // Faint line under the time
+            Divider(
+                color = Color.Black.copy(alpha = 0.2f),
+                thickness = 0.5.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 1.dp)
+            )
+
+            // Task name - use all remaining space
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = task.name,
+                    color = Color.Black,
+                    fontSize = taskFontSize,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 10.sp
+                )
+            }
+        }
     }
 }
+@RequiresApi(Build.VERSION_CODES.O)
+fun createTaskFromInput(
+    taskName: String,
+    selectedTime: String,
+    selectedDate: org.threeten.bp.LocalDate,
+    selectedColor: Color?,
+    repeatUnit: String,
+    repeatDays: Set<Int>,
+    repeatEndCondition: EndCondition
+): Task {
+    val timeParts = selectedTime.split(" - ")
+    val startTime = if (timeParts.isNotEmpty()) timeParts[0].trim() else "09:00"
+    val endTime = if (timeParts.size > 1) timeParts[1].trim() else "10:00"
+
+    // Convert ThreeTenBP LocalDate to java.time.LocalDate for consistent storage
+    val taskLocalDate = try {
+        LocalDate.of(selectedDate.year, selectedDate.monthValue, selectedDate.dayOfMonth)
+    } catch (e: Exception) {
+        LocalDate.now() // Fallback
+    }
+
+    // Handle repeat rule with proper frequency mapping
+    val repeatRule = if (repeatUnit != "Once") {
+        val frequency = when (repeatUnit.lowercase()) {
+            "daily" -> "day"
+            "weekly" -> "week"
+            "monthly" -> "month"
+            "yearly" -> "year"
+            else -> repeatUnit.lowercase()
+        }
+
+        RepeatRule(
+            frequency = frequency,
+            daysOfWeek = if (repeatUnit.equals("Week", ignoreCase = true)) repeatDays else null,
+            endDate = when (repeatEndCondition) {
+                is EndCondition.OnDate -> {
+                    val endLocalDate = LocalDate.of(
+                        repeatEndCondition.date.year,
+                        repeatEndCondition.date.monthValue,
+                        repeatEndCondition.date.dayOfMonth
+                    )
+                    endLocalDate.toString()
+                }
+                else -> null
+            }
+        )
+    } else {
+        null
+    }
+
+    return Task(
+        id = System.currentTimeMillis(),
+        name = taskName,
+        startTime = startTime,
+        endTime = endTime,
+        color = selectedColor ?: Color(0xFF64B5F6),
+        date = taskLocalDate.toString(), // Store in ISO format (yyyy-MM-dd)
+        repeatRule = repeatRule
+    )
+}
+// Add this at the very bottom of CalendarView.kt (after the CalendarView composable)
+
+
+private fun isTaskInWeek(task: Task, weekDates: List<Triple<Int, Int, Int>>): Boolean {
+    // Parse the task date string (format: "yyyy-MM-dd")
+    val taskDateParts = task.date.split("-")
+    if (taskDateParts.size != 3) return false
+
+    val taskYear = taskDateParts[0].toIntOrNull() ?: return false
+    val taskMonth = taskDateParts[1].toIntOrNull() ?: return false
+    val taskDay = taskDateParts[2].toIntOrNull() ?: return false
+
+    // Check if task date matches any date in the current week
+    return weekDates.any { (day, month, year) ->
+        // Note: Calendar months are 0-based (January=0), but our task dates are 1-based
+        taskDay == day && taskMonth == month + 1 && taskYear == year
+    }
+}
+
+// Add these functions to your CalendarView.kt file (outside the composable)
+
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun getDayIndexForTask(task: Task, weekDates: List<Triple<Int, Int, Int>>): Int {
+    val taskDate = parseTaskDate(task.date) ?: return -1
+
+    weekDates.forEachIndexed { index, (day, month, year) ->
+        val weekDayDate = LocalDate.of(year, month + 1, day) // Convert to LocalDate
+        if (taskDate == weekDayDate) {
+            return index
+        }
+    }
+    return -1
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun getTaskOccurrencesForWeek(
+    task: Task,
+    weekDates: List<Triple<Int, Int, Int>>,
+    weekOffset: Int
+): List<Task> {
+    val occurrences = mutableListOf<Task>()
+
+    // Parse the original task date
+    val taskDate = parseTaskDate(task.date) ?: return emptyList()
+
+    // For each day in the current week, check if the task should appear
+    weekDates.forEachIndexed { index, weekDate ->
+        val weekDayDate = LocalDate.of(weekDate.third, weekDate.second + 1, weekDate.first)
+
+        if (shouldTaskAppearOnDate(task, taskDate, weekDayDate, weekOffset)) {
+            // Create a copy of the task for this specific date
+            occurrences.add(task.copy(date = weekDayDate.toString()))
+        }
+    }
+
+    return occurrences
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun shouldTaskAppearOnDate(
+    task: Task,
+    originalTaskDate: LocalDate,
+    targetDate: LocalDate,
+    weekOffset: Int
+): Boolean {
+    // If it's a one-time task, check exact date match
+    if (task.repeatRule == null) {
+        return originalTaskDate == targetDate
+    }
+
+    val repeatRule = task.repeatRule!!
+
+    // Check if target date is before original task date
+    if (targetDate.isBefore(originalTaskDate)) {
+        return false
+    }
+
+    // Check end date condition
+    if (repeatRule.endDate != null) {
+        val endDate = LocalDate.parse(repeatRule.endDate)
+        if (targetDate.isAfter(endDate)) {
+            return false
+        }
+    }
+
+    // Handle different repetition frequencies
+    return when (repeatRule.frequency.lowercase()) {
+        "day", "daily" -> isDailyRepetition(originalTaskDate, targetDate)
+        "week", "weekly" -> isWeeklyRepetition(originalTaskDate, targetDate, repeatRule.daysOfWeek)
+        "month", "monthly" -> isMonthlyRepetition(originalTaskDate, targetDate)
+        "year", "yearly" -> isYearlyRepetition(originalTaskDate, targetDate)
+        else -> originalTaskDate == targetDate // Fallback to one-time
+    }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+private fun parseTaskDate(dateString: String): LocalDate? {
+    return try {
+        // Try ISO format first (yyyy-MM-dd)
+        LocalDate.parse(dateString)
+    } catch (e: Exception) {
+        try {
+            // Try dd/MM/yyyy format
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            LocalDate.parse(dateString, formatter)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+// Repetition helper functions
+@RequiresApi(Build.VERSION_CODES.O)
+private fun isDailyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
+    return !originalDate.isAfter(targetDate) // Every day from original date onward
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun isWeeklyRepetition(
+    originalDate: LocalDate,
+    targetDate: LocalDate,
+    daysOfWeek: Set<Int>?
+): Boolean {
+    // If specific days are provided, use them
+    if (!daysOfWeek.isNullOrEmpty()) {
+        // Convert Java DayOfWeek (Monday=1) to your app's day index (Monday=0)
+        val targetDayIndex = (targetDate.dayOfWeek.value - 1) % 7
+        return daysOfWeek.contains(targetDayIndex)
+    }
+
+    // Otherwise, same day of week as original task
+    return originalDate.dayOfWeek == targetDate.dayOfWeek
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun isMonthlyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
+    return originalDate.dayOfMonth == targetDate.dayOfMonth
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun isYearlyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
+    return originalDate.dayOfMonth == targetDate.dayOfMonth &&
+            originalDate.month == targetDate.month
+}
+
