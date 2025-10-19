@@ -74,7 +74,7 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
     // SAFETY: Initialize ThreeTenABP properly
     val context = LocalContext.current
 
-    var isDateInitialized by remember { mutableStateOf(false) }
+    var isDateInitialized by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         try {
