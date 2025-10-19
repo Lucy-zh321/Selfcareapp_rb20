@@ -733,6 +733,7 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
                     modifier = Modifier
                         .size(60.dp)
                         .background(getSelectedColor(selectedColor), CircleShape)
+                        // In your save button clickable modifier:
                         .clickable {
                             val newTask = createTaskFromInput(
                                 taskName = taskName,
@@ -741,7 +742,9 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
                                 selectedColor = selectedColor,
                                 repeatUnit = repeatUnit,
                                 repeatDays = repeatDays,
-                                repeatEndCondition = repeatEndCondition
+                                repeatEndCondition = repeatEndCondition,
+                                selectedLength = selectedLength, // ADD THIS
+                                manualTimeRange = manualTimeRange // ADD THIS
                             )
                             onTaskAdded(newTask)
                             onBack()
@@ -975,33 +978,6 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
 }
 
 
-
-/**
- * Adds a color to the recent list, moving it to the front.
- * Removes duplicates and keeps the list to a manageable size.
- */
-
-// Helper functions
-private fun timeToMinutes(time: String): Int {
-    return try {
-        val parts = time.split(":")
-        val hours = parts.getOrNull(0)?.toIntOrNull() ?: 0 // Safe access and conversion
-        val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0 // Safe access and conversion
-        hours * 60 + minutes
-    } catch (e: Exception) {
-        Log.e("Add Task", "timeToMinutes error occurred: ${e.message}", e)
-        0 // Fallback value
-    }
-}
-
-/*private fun isStandardDuration(minutes: Int): Boolean {
-    return minutes in listOf(1, 15, 30, 45, 60, 90) // Matches your standard options
-}
-
-private fun calculateDuration(startTime: String, endTime: String): Int {
-    return timeToMinutes(endTime) - timeToMinutes(startTime) // Uses your existing function
-}*/
-
 @Composable
 fun SubtaskRow(
     subtask: SubtaskItem,
@@ -1127,13 +1103,13 @@ private fun formatMinutesToDuration(minutes: Int): String {
     }
 }
 
-private fun parseDurationToMinutes(duration: String): Int? {
-    return when {
-        duration.endsWith("h") -> duration.removeSuffix("h").toIntOrNull()?.times(60)
-        duration.endsWith("m") -> duration.removeSuffix("m").toIntOrNull()
-        else -> duration.toIntOrNull()
-    }
-}
+//private fun parseDurationToMinutes(duration: String): Int? {
+//    return when {
+//        duration.endsWith("h") -> duration.removeSuffix("h").toIntOrNull()?.times(60)
+//        duration.endsWith("m") -> duration.removeSuffix("m").toIntOrNull()
+//        else -> duration.toIntOrNull()
+//    }
+//}
 // Add this function at the top level (outside any composable)
 @Composable
 fun getSelectedColor(selectedColor: Color?, defaultColor: Color = Color(0xFF64B5F6)): Color {
@@ -1144,4 +1120,27 @@ fun getSelectedColor(selectedColor: Color?, defaultColor: Color = Color(0xFF64B5
 @Composable
 fun getSelectedColorWithAlpha(selectedColor: Color?, alpha: Float = 0.3f): Color {
     return getSelectedColor(selectedColor).copy(alpha = alpha)
+}
+
+private fun timeToMinutes(time: String): Int {
+    return try {
+        val parts = time.split(":")
+        val hours = parts.getOrNull(0)?.toIntOrNull() ?: 0
+        val minutes = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        hours * 60 + minutes
+    } catch (e: Exception) {
+        Log.e("Add Task", "timeToMinutes error occurred: ${e.message}", e)
+        0 // Fallback value
+    }
+}
+
+private fun parseDurationToMinutes(duration: String): Int? {
+    return when {
+        duration.endsWith("h") -> {
+            val hours = duration.removeSuffix("h").toDoubleOrNull()
+            (hours?.times(60))?.toInt()
+        }
+        duration.endsWith("m") -> duration.removeSuffix("m").toIntOrNull()
+        else -> duration.toIntOrNull()
+    }
 }

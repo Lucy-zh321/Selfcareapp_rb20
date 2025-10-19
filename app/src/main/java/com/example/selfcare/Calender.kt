@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.selfcare.ui.theme.SelfCareTheme
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -293,9 +294,10 @@ fun CalendarView(
 // Tasks overlay - FIXED: Precise positioning within grid cells
                             // In CalendarView task positioning:
                             Box(modifier = Modifier.matchParentSize()) {
-                                val currentWeekTasks = remember(weekDates, tasks) {
-                                    tasks.filter { task ->
-                                        isTaskInWeek(task, weekDates)
+                                // In CalendarView composable:
+                                val currentWeekTasks = remember(weekDates, tasks, weekOffset) {
+                                    tasks.flatMap { task ->
+                                        getTaskOccurrencesForWeek(task, weekDates, weekOffset)
                                     }
                                 }
 
@@ -446,43 +448,70 @@ fun createTaskFromInput(
     selectedColor: Color?,
     repeatUnit: String,
     repeatDays: Set<Int>,
-    repeatEndCondition: EndCondition
+    repeatEndCondition: EndCondition,
+    selectedLength: String? = null,
+    manualTimeRange: String? = null
 ): Task {
-    val timeParts = selectedTime.split(" - ")
-    val startTime = if (timeParts.isNotEmpty()) timeParts[0].trim() else "09:00"
-    val endTime = if (timeParts.size > 1) timeParts[1].trim() else "10:00"
+    val startTime: String
+    val endTime: String
 
-    // Convert ThreeTenBP LocalDate to java.time.LocalDate for consistent storage
+    if (manualTimeRange != null) {
+        val parts = manualTimeRange.split(" - ")
+        startTime = parts.getOrNull(0)?.trim() ?: "09:00"
+        endTime = parts.getOrNull(1)?.trim() ?: "10:00"
+    } else {
+        val timeRange = calculateEndTime(selectedTime, selectedLength ?: "1h")
+        val parts = timeRange.split(" - ")
+
+        if (parts.size == 2) {
+            startTime = parts[0].trim()
+            endTime = parts[1].trim()
+        } else {
+            startTime = timeRange
+            endTime = calculateSimpleEndTime(startTime, selectedLength ?: "1h")
+        }
+    }
+
+    // Convert ThreeTenBP LocalDate to java.time.LocalDate
     val taskLocalDate = try {
         LocalDate.of(selectedDate.year, selectedDate.monthValue, selectedDate.dayOfMonth)
     } catch (e: Exception) {
-        LocalDate.now() // Fallback
+        LocalDate.now()
     }
 
-    // Handle repeat rule with proper frequency mapping
+    // ENHANCED: Handle all repetition types including custom
     val repeatRule = if (repeatUnit != "Once") {
-        val frequency = when (repeatUnit.lowercase()) {
-            "daily" -> "day"
-            "weekly" -> "week"
-            "monthly" -> "month"
-            "yearly" -> "year"
-            else -> repeatUnit.lowercase()
+        // Determine days of week - for weekly repetition
+        val daysOfWeek = when {
+            repeatUnit == "Week" && repeatDays.isNotEmpty() -> repeatDays
+            repeatUnit == "Week" && repeatDays.isEmpty() -> {
+                // Auto-set to the day of week of the selected date
+                setOf(taskLocalDate.dayOfWeek.value - 1) // Convert to 0-based (Monday=0)
+            }
+            else -> null
+        }
+
+        // Determine end date
+        val endDate = when (repeatEndCondition) {
+            is EndCondition.OnDate -> {
+                val endLocalDate = LocalDate.of(
+                    repeatEndCondition.date.year,
+                    repeatEndCondition.date.monthValue,
+                    repeatEndCondition.date.dayOfMonth
+                )
+                endLocalDate.toString()
+            }
+            is EndCondition.AfterOccurrences -> {
+                // Calculate end date based on occurrences (simplified - use 1 year as default)
+                taskLocalDate.plusYears(1).toString()
+            }
+            else -> null // Never ends
         }
 
         RepeatRule(
-            frequency = frequency,
-            daysOfWeek = if (repeatUnit.equals("Week", ignoreCase = true)) repeatDays else null,
-            endDate = when (repeatEndCondition) {
-                is EndCondition.OnDate -> {
-                    val endLocalDate = LocalDate.of(
-                        repeatEndCondition.date.year,
-                        repeatEndCondition.date.monthValue,
-                        repeatEndCondition.date.dayOfMonth
-                    )
-                    endLocalDate.toString()
-                }
-                else -> null
-            }
+            frequency = repeatUnit.lowercase(), // "day", "week", "month", "year"
+            daysOfWeek = daysOfWeek,
+            endDate = endDate
         )
     } else {
         null
@@ -494,9 +523,29 @@ fun createTaskFromInput(
         startTime = startTime,
         endTime = endTime,
         color = selectedColor ?: Color(0xFF64B5F6),
-        date = taskLocalDate.toString(), // Store in ISO format (yyyy-MM-dd)
+        date = taskLocalDate.toString(),
         repeatRule = repeatRule
     )
+}
+
+// Add this helper function for single time calculations
+private fun calculateSimpleEndTime(startTime: String, duration: String): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val start = sdf.parse(startTime)
+    val calendar = Calendar.getInstance().apply { time = start!! }
+
+    val minutesToAdd = when (duration) {
+        "1" -> 1
+        "15" -> 15
+        "30" -> 30
+        "45" -> 45
+        "1h" -> 60
+        "1.5h" -> 90
+        else -> 60 // Default to 1 hour
+    }
+
+    calendar.add(Calendar.MINUTE, minutesToAdd)
+    return sdf.format(calendar.time)
 }
 // Add this at the very bottom of CalendarView.kt (after the CalendarView composable)
 
@@ -543,13 +592,13 @@ private fun getTaskOccurrencesForWeek(
     val occurrences = mutableListOf<Task>()
 
     // Parse the original task date
-    val taskDate = parseTaskDate(task.date) ?: return emptyList()
+    val originalTaskDate = parseTaskDate(task.date) ?: return emptyList()
 
     // For each day in the current week, check if the task should appear
     weekDates.forEachIndexed { index, weekDate ->
         val weekDayDate = LocalDate.of(weekDate.third, weekDate.second + 1, weekDate.first)
 
-        if (shouldTaskAppearOnDate(task, taskDate, weekDayDate, weekOffset)) {
+        if (shouldTaskAppearOnDate(task, originalTaskDate, weekDayDate, weekOffset)) {
             // Create a copy of the task for this specific date
             occurrences.add(task.copy(date = weekDayDate.toString()))
         }
@@ -570,12 +619,12 @@ private fun shouldTaskAppearOnDate(
         return originalTaskDate == targetDate
     }
 
-    val repeatRule = task.repeatRule!!
-
-    // Check if target date is before original task date
+    // Don't show tasks before the original date
     if (targetDate.isBefore(originalTaskDate)) {
         return false
     }
+
+    val repeatRule = task.repeatRule!!
 
     // Check end date condition
     if (repeatRule.endDate != null) {
@@ -587,13 +636,15 @@ private fun shouldTaskAppearOnDate(
 
     // Handle different repetition frequencies
     return when (repeatRule.frequency.lowercase()) {
-        "day", "daily" -> isDailyRepetition(originalTaskDate, targetDate)
-        "week", "weekly" -> isWeeklyRepetition(originalTaskDate, targetDate, repeatRule.daysOfWeek)
-        "month", "monthly" -> isMonthlyRepetition(originalTaskDate, targetDate)
-        "year", "yearly" -> isYearlyRepetition(originalTaskDate, targetDate)
+        "day" -> isDailyRepetition(originalTaskDate, targetDate)
+        "week" -> isWeeklyRepetition(originalTaskDate, targetDate, repeatRule.daysOfWeek)
+        "month" -> isMonthlyRepetition(originalTaskDate, targetDate)
+        "year" -> isYearlyRepetition(originalTaskDate, targetDate)
         else -> originalTaskDate == targetDate // Fallback to one-time
     }
 }
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 private fun parseTaskDate(dateString: String): LocalDate? {
     return try {
@@ -611,9 +662,14 @@ private fun parseTaskDate(dateString: String): LocalDate? {
 }
 
 // Repetition helper functions
+
+
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 private fun isDailyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
-    return !originalDate.isAfter(targetDate) // Every day from original date onward
+    // Every day from original date onward
+    return !targetDate.isBefore(originalDate)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -622,25 +678,27 @@ private fun isWeeklyRepetition(
     targetDate: LocalDate,
     daysOfWeek: Set<Int>?
 ): Boolean {
-    // If specific days are provided, use them
+    // If specific days are provided, check if target date matches any of them
     if (!daysOfWeek.isNullOrEmpty()) {
         // Convert Java DayOfWeek (Monday=1) to your app's day index (Monday=0)
         val targetDayIndex = (targetDate.dayOfWeek.value - 1) % 7
-        return daysOfWeek.contains(targetDayIndex)
+        return daysOfWeek.contains(targetDayIndex) && !targetDate.isBefore(originalDate)
     }
 
-    // Otherwise, same day of week as original task
-    return originalDate.dayOfWeek == targetDate.dayOfWeek
+    // Otherwise, same day of week as original task, but only after original date
+    return originalDate.dayOfWeek == targetDate.dayOfWeek && !targetDate.isBefore(originalDate)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun isMonthlyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
-    return originalDate.dayOfMonth == targetDate.dayOfMonth
+    // Same day of month, but only after original date
+    return originalDate.dayOfMonth == targetDate.dayOfMonth && !targetDate.isBefore(originalDate)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun isYearlyRepetition(originalDate: LocalDate, targetDate: LocalDate): Boolean {
-    return originalDate.dayOfMonth == targetDate.dayOfMonth &&
-            originalDate.month == targetDate.month
+    // Same month and day, but only after original date
+    return originalDate.month == targetDate.month &&
+            originalDate.dayOfMonth == targetDate.dayOfMonth &&
+            !targetDate.isBefore(originalDate)
 }
-

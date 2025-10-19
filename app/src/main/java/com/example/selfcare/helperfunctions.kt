@@ -1,6 +1,7 @@
 package com.example.selfcare
 
 
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -127,3 +128,4 @@ fun roundToNearestStandard(minute: Int): Int {
 fun getSelectedColor(selectedColor: Color?): Color {
     return selectedColor ?: Color(0xFFFFB6C1) // Fallback to original pink if no color selected
 }
+
