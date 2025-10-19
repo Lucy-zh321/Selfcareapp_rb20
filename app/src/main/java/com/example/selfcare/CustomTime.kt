@@ -308,7 +308,7 @@ private fun EndConditionSelector(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                color = if (currentCondition is EndCondition.OnDate) Color(0xFFFFE0E0) else Color.Black,
+                color = if (currentCondition is EndCondition.OnDate) Color(0xFF000000) else Color.Black,
                 modifier = Modifier.clickable(onClick = onDateClicked)
             )
         }

@@ -39,6 +39,7 @@ import androidx. compose. ui. platform. LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.text.style.TextDecoration
 import java.time.LocalTime
 
 
@@ -46,11 +47,11 @@ import java.time.LocalTime
 
 
 data class RepeatRule(
-    val frequency: String,
+    val frequency: String,      // "day", "week", "month", "year"
+    val interval: Int = 1,      // ADD THIS: every 1, 2, 3, etc.
     val daysOfWeek: Set<Int>? = null,
     val endDate: String? = null
 )
-
 
 
 data class SubtaskItem(
@@ -735,6 +736,7 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
                         .background(getSelectedColor(selectedColor), CircleShape)
                         // In your save button clickable modifier:
                         .clickable {
+                            // In your save button click handler:
                             val newTask = createTaskFromInput(
                                 taskName = taskName,
                                 selectedTime = selectedTime,
@@ -743,8 +745,9 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
                                 repeatUnit = repeatUnit,
                                 repeatDays = repeatDays,
                                 repeatEndCondition = repeatEndCondition,
-                                selectedLength = selectedLength, // ADD THIS
-                                manualTimeRange = manualTimeRange // ADD THIS
+                                repeatInterval = repeatInterval,  // ADD THIS
+                                selectedLength = selectedLength,
+                                manualTimeRange = manualTimeRange
                             )
                             onTaskAdded(newTask)
                             onBack()
@@ -981,10 +984,11 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
 @Composable
 fun SubtaskRow(
     subtask: SubtaskItem,
-    selectedColor: Color?, // Add this parameter
+    selectedColor: Color?,
     onTextChanged: (String) -> Unit,
     onCompletedChanged: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isEditable: Boolean = true // Add this parameter
 ) {
     Row(
         modifier = Modifier
@@ -996,43 +1000,62 @@ fun SubtaskRow(
             checked = subtask.isCompleted,
             onCheckedChange = onCompletedChanged,
             colors = CheckboxDefaults.colors(
-                checkedColor = getSelectedColor(selectedColor) // Use the utility function
+                checkedColor = getSelectedColor(selectedColor)
             ),
             modifier = Modifier.size(20.dp)
         )
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        BasicTextField(
-            value = subtask.text,
-            onValueChange = onTextChanged,
-            modifier = Modifier
-                .weight(1f)
-                .height(36.dp)
-                .padding(vertical = 8.dp),
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                Column {
-                    innerTextField()
-                    Divider(
-                        color = if (subtask.text.isNotEmpty()) getSelectedColor(selectedColor) else Color.Gray,
-                        thickness = 1.dp
-                    )
+        if (isEditable) {
+            // Editable version (for AddTaskScreen)
+            BasicTextField(
+                value = subtask.text,
+                onValueChange = onTextChanged,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp)
+                    .padding(vertical = 8.dp),
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 14.sp,
+                    textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                ),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                    Column {
+                        innerTextField()
+                        Divider(
+                            color = if (subtask.text.isNotEmpty()) getSelectedColor(selectedColor) else Color.Gray,
+                            thickness = 1.dp
+                        )
+                    }
                 }
-            }
-        )
+            )
+        } else {
+            // Read-only version (for TaskDetailBottomSheet)
+            Text(
+                text = subtask.text,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 8.dp),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                ),
+                color = if (subtask.isCompleted) Color.Gray else Color.Black
+            )
+        }
 
-        Spacer(modifier = Modifier.width(4.dp))
-
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = "Delete subtask",
-            modifier = Modifier
-                .size(18.dp)
-                .clickable { onDelete() },
-            tint = Color.Gray
-        )
+        if (isEditable) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Delete subtask",
+                modifier = Modifier
+                    .size(18.dp)
+                    .clickable { onDelete() },
+                tint = Color.Gray
+            )
+        }
     }
 }
 
@@ -1144,3 +1167,5 @@ private fun parseDurationToMinutes(duration: String): Int? {
         else -> duration.toIntOrNull()
     }
 }
+
+
