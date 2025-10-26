@@ -70,7 +70,10 @@ class MyApp : Application() {
 // Add this data class at the top level (outside of any function)
 
 @Composable
-fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
+fun AddTaskScreen(onBack: () -> Unit,
+                  onTaskAdded: (Task) -> Unit = {},
+                  existingTask: Task? = null
+) {
     // SAFETY: Initialize ThreeTenABP properly
     val context = LocalContext.current
 
@@ -87,9 +90,9 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
     }
 
     // State declarations
-    var taskName by remember { mutableStateOf("") }
+    var taskName by remember { mutableStateOf(existingTask?.name ?: "") }
     var showTimeDialog by remember { mutableStateOf(false) }
-    var selectedTime by remember { mutableStateOf("09:00") }
+    var selectedTime by remember { mutableStateOf(existingTask?.startTime ?: "09:00") }
     var selectedLength by remember { mutableStateOf<String?>("1h") }
     var manualTimeRange by remember { mutableStateOf<String?>(null) }
     var isCustomDuration by remember { mutableStateOf(false) }
@@ -169,11 +172,19 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
 
     // Add these with your other state declarations
     var showCustomRepeatDialog by remember { mutableStateOf(false) }
-    var repeatInterval by remember { mutableStateOf(1) }
-    var repeatUnit by remember { mutableStateOf("Week") }
-    var repeatDays by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var repeatInterval by remember {
+        mutableStateOf(existingTask?.repeatRule?.interval ?: 1)
+    }
+    var repeatUnit by remember {
+        mutableStateOf(
+            existingTask?.repeatRule?.frequency?.replaceFirstChar { it.uppercase() } ?: "Once"
+        )
+    }
+    var repeatDays by remember {
+        mutableStateOf<Set<Int>>(existingTask?.repeatRule?.daysOfWeek ?: emptySet())
+    }
     var repeatEndCondition by remember { mutableStateOf<EndCondition>(EndCondition.Never) }
-    var selectedColor by remember { mutableStateOf<Color?>(null) }
+    var selectedColor by remember { mutableStateOf<Color?>(existingTask?.color) }
 
 
     var showColorDialog by remember { mutableStateOf(false) }
@@ -207,7 +218,7 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
     var showNotificationOptionsDialog by remember { mutableStateOf(false) }
     var showCustomNotificationDialog by remember { mutableStateOf(false) }
     var mainNote by remember { mutableStateOf("") }
-    var subtasks by remember { mutableStateOf<List<SubtaskItem>>(emptyList()) }
+    var subtasks by remember { mutableStateOf(existingTask?.subtasks ?: emptyList()) }
 
 
 
@@ -736,20 +747,64 @@ fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
                         .background(getSelectedColor(selectedColor), CircleShape)
                         // In your save button clickable modifier:
                         .clickable {
-                            // In your save button click handler:
-                            val newTask = createTaskFromInput(
-                                taskName = taskName,
-                                selectedTime = selectedTime,
-                                selectedDate = selectedDate,
-                                selectedColor = selectedColor,
-                                repeatUnit = repeatUnit,
-                                repeatDays = repeatDays,
-                                repeatEndCondition = repeatEndCondition,
-                                repeatInterval = repeatInterval,  // ADD THIS
-                                selectedLength = selectedLength,
-                                manualTimeRange = manualTimeRange
-                            )
-                            onTaskAdded(newTask)
+                            val task = if (existingTask != null) {
+                                // UPDATE EXISTING TASK
+                                existingTask.copy(
+                                    name = taskName,
+                                    startTime = selectedTime,
+                                    endTime = if (manualTimeRange != null) {
+                                        // Use let to safely handle the nullable manualTimeRange
+                                        manualTimeRange?.let { range ->
+                                            range.split(" - ").getOrNull(1)
+                                        } ?: calculateEndTime(selectedTime, selectedLength ?: "1h")
+                                    } else {
+                                        calculateEndTime(selectedTime, selectedLength ?: "1h").split(" - ").getOrNull(1) ?: "10:00"
+                                    },
+                                    color = selectedColor ?: Color(0xFF64B5F6),
+                                    date = try {
+                                        LocalDate.of(selectedDate.year, selectedDate.monthValue, selectedDate.dayOfMonth).toString()
+                                    } catch (e: Exception) {
+                                        LocalDate.now().toString()
+                                    },
+                                    repeatRule = if (repeatUnit != "Once") {
+                                        RepeatRule(
+                                            frequency = repeatUnit.lowercase(),
+                                            interval = repeatInterval,
+                                            daysOfWeek = if (repeatUnit == "Week") repeatDays else null,
+                                            endDate = when (repeatEndCondition) {
+                                                is EndCondition.OnDate -> {
+                                                    val endLocalDate = LocalDate.of(
+                                                        (repeatEndCondition as EndCondition.OnDate).date.year,
+                                                        (repeatEndCondition as EndCondition.OnDate).date.monthValue,
+                                                        (repeatEndCondition as EndCondition.OnDate).date.dayOfMonth
+                                                    )
+                                                    endLocalDate.toString()
+                                                }
+                                                else -> null
+                                            }
+                                        )
+                                    } else {
+                                        null
+                                    },
+                                    subtasks = subtasks
+                                )
+                            } else {
+                                // CREATE NEW TASK
+                                createTaskFromInput(
+                                    taskName = taskName,
+                                    selectedTime = selectedTime,
+                                    selectedDate = selectedDate,
+                                    selectedColor = selectedColor,
+                                    repeatUnit = repeatUnit,
+                                    repeatDays = repeatDays,
+                                    repeatEndCondition = repeatEndCondition,
+                                    repeatInterval = repeatInterval,
+                                    selectedLength = selectedLength,
+                                    manualTimeRange = manualTimeRange,
+                                    subtasks = subtasks
+                                )
+                            }
+                            onTaskAdded(task)
                             onBack()
                         }
                         .padding(12.dp),
