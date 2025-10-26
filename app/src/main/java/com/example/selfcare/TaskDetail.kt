@@ -46,13 +46,6 @@ fun TaskDetailBottomSheet(
     modifier: Modifier = Modifier
 ) {
     val sheetState = rememberModalBottomSheetState()
-    var isExpanded by remember { mutableStateOf(false) }
-
-    // Calculate dynamic height based on content
-    val dynamicHeight by animateDpAsState(
-        targetValue = calculateSheetHeight(subtasks.size),
-        label = "sheet_height_animation"
-    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -80,7 +73,6 @@ fun TaskDetailBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = dynamicHeight)
                 .padding(horizontal = 16.dp)
         ) {
             // Task Name Section
@@ -112,15 +104,12 @@ fun TaskDetailBottomSheet(
             ) {
                 if (subtasks.isNotEmpty()) {
                     subtasks.forEach { subtask ->
-                        SubtaskRow(
+                        SubtaskCheckRow(
                             subtask = subtask,
-                            selectedColor = task.color,
-                            onTextChanged = { /* Not editable in detail view */ },
-                            onCompletedChanged = { completed ->
-                                onSubtaskChecked(subtask.id, completed)
-                            },
-                            onDelete = { /* Not deletable in detail view */ },
-                            isEditable = false // Make it read-only in detail view
+                            taskColor = task.color,
+                            onCheckedChange = { checked ->
+                                onSubtaskChecked(subtask.id, checked)
+                            }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -147,22 +136,23 @@ fun TaskDetailBottomSheet(
                     .height(60.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Delete Button
-                OutlinedButton(
+                // Delete Button - Less rounded, task color
+                Button(
                     onClick = onDeleteTask,
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp)
                         .padding(end = 8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Red
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = task.color,
+                        contentColor = Color.White
                     ),
-                    border = BorderStroke(1.dp, Color.Red)
+                    shape = RoundedCornerShape(12.dp) // Less rounded corners
                 ) {
                     Text("Delete")
                 }
 
-                // Edit Button
+                // Edit Button - Less rounded, task color
                 Button(
                     onClick = onEditTask,
                     modifier = Modifier
@@ -170,8 +160,10 @@ fun TaskDetailBottomSheet(
                         .height(50.dp)
                         .padding(start = 8.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = getSelectedColor(task.color)
-                    )
+                        containerColor = task.color,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp) // Less rounded corners
                 ) {
                     Text("Edit")
                 }
@@ -180,6 +172,149 @@ fun TaskDetailBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+}
+
+@Composable
+fun SubtaskCheckRow(
+    subtask: SubtaskItem,
+    taskColor: Color,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = subtask.isCompleted,
+            onCheckedChange = onCheckedChange,
+            colors = CheckboxDefaults.colors(
+                checkedColor = taskColor,
+                uncheckedColor = taskColor.copy(alpha = 0.6f)
+            ),
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Text(
+            text = subtask.text,
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 8.dp),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+            ),
+            color = if (subtask.isCompleted) Color.Gray else Color.Black
+        )
+    }
+}
+
+@Composable
+fun DeleteTaskDialog(
+    task: Task,
+    onDismiss: () -> Unit,
+    onDeleteThisTask: () -> Unit,
+    onDeleteAllRepeats: () -> Unit,
+    taskColor: Color
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Delete Task", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text("How would you like to delete this task?")
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (task.repeatRule != null) {
+                    // Show both options for repeating tasks
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDeleteThisTask() }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = false,
+                            onClick = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Delete only this occurrence", fontWeight = FontWeight.Medium)
+                            Text("Remove this task only for ${task.date}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDeleteAllRepeats() }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = false,
+                            onClick = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Delete all repeats", fontWeight = FontWeight.Medium)
+                            Text("Remove this task and all future occurrences",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray)
+                        }
+                    }
+                } else {
+                    // Single task - just show delete option
+                    Text("This task will be permanently deleted.")
+                }
+            }
+        },
+        confirmButton = {
+            if (task.repeatRule != null) {
+                // For repeating tasks, show both options as buttons
+                Row {
+                    TextButton(
+                        onClick = onDeleteThisTask,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = taskColor
+                        )
+                    ) {
+                        Text("This occurrence only")
+                    }
+                    TextButton(
+                        onClick = onDeleteAllRepeats,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = taskColor
+                        )
+                    ) {
+                        Text("All repeats")
+                    }
+                }
+            } else {
+                // For single tasks, just show delete
+                TextButton(
+                    onClick = onDeleteThisTask,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = taskColor
+                    )
+                ) {
+                    Text("Delete")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 

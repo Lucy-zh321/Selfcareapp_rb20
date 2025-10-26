@@ -76,7 +76,8 @@ data class Task(
     val endTime: String,
     val color: Color,
     val date: String,
-    val repeatRule: RepeatRule? = null
+    val repeatRule: RepeatRule? = null,
+    val subtasks: List<SubtaskItem> = emptyList() // ADD THIS
 )
 
 
@@ -92,10 +93,14 @@ data class Task(
 fun CalendarView(
     tasks: List<Task> = emptyList(),
     onAddTask: () -> Unit = {},
+    onUpdateTask: (Task) -> Unit = {},
+    onDeleteTask: (Task, Boolean) -> Unit = { _, _ -> }, // ADD THIS: (task, deleteAllRepeats)
+    onEditTask: (Task) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var weekOffset by remember { mutableIntStateOf(0) }
     val calendar = Calendar.getInstance()
+    var showDeleteDialog by remember { mutableStateOf(false) } // ADD THIS
     calendar.add(Calendar.WEEK_OF_YEAR, weekOffset)
 
     val currentYear = calendar.get(Calendar.YEAR)
@@ -325,8 +330,9 @@ fun CalendarView(
                 }
 
                 // Floating Action Button - Fixed position in scrollable area
+                // In your CalendarView, make sure the FAB looks like this:
                 FloatingActionButton(
-                    onClick = onAddTask,
+                    onClick = onAddTask, // This should call the callback from MainScreen
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(20.dp)
@@ -336,30 +342,55 @@ fun CalendarView(
             }
 
         }
+        // In your CalendarView, update the bottom sheet call:
+        // In your CalendarView, make sure you're handling the subtask updates:
         selectedTask?.let { task ->
             TaskDetailBottomSheet(
                 task = task,
-                subtasks = emptyList(), // You'll need to provide actual subtasks here
+                subtasks = task.subtasks,
                 onSubtaskChecked = { subtaskId, completed ->
-                    // Handle subtask completion
-                    println("Subtask $subtaskId checked: $completed")
+                    val updatedSubtasks = task.subtasks.map { subtask ->
+                        if (subtask.id == subtaskId) {
+                            subtask.copy(isCompleted = completed)
+                        } else {
+                            subtask
+                        }
+                    }
+                    val updatedTask = task.copy(subtasks = updatedSubtasks)
+                    onUpdateTask(updatedTask)
                 },
                 onDeleteTask = {
-                    // Handle task deletion
-                    selectedTask = null
-                    println("Delete task: ${task.name}")
+                    showDeleteDialog = true // Show delete options dialog
                 },
                 onEditTask = {
-                    // Handle task editing
                     selectedTask = null
-                    println("Edit task: ${task.name}")
+                    onEditTask(task) // Navigate to edit screen with existing task
                 },
                 onDismiss = { selectedTask = null }
             )
         }
 
+        // Show delete confirmation dialog
+        if (showDeleteDialog && selectedTask != null) {
+            DeleteTaskDialog(
+                task = selectedTask!!,
+                onDismiss = { showDeleteDialog = false },
+                onDeleteThisTask = {
+                    // Delete only this occurrence
+                    onDeleteTask(selectedTask!!, false)
+                    selectedTask = null
+                    showDeleteDialog = false
+                },
+                onDeleteAllRepeats = {
+                    // Delete all repeats
+                    onDeleteTask(selectedTask!!, true)
+                    selectedTask = null
+                    showDeleteDialog = false
+                },
+                taskColor = selectedTask!!.color
+            )
+        }
     }
-
 }
 // Helper function to determine which day column a task belongs to
 
@@ -484,7 +515,8 @@ fun createTaskFromInput(
     repeatEndCondition: EndCondition,
     repeatInterval: Int = 1,  // ADD THIS PARAMETER
     selectedLength: String? = null,
-    manualTimeRange: String? = null
+    manualTimeRange: String? = null,
+    subtasks: List<SubtaskItem> = emptyList()
 ): Task {
     val startTime: String
     val endTime: String
@@ -555,8 +587,10 @@ fun createTaskFromInput(
         endTime = endTime,
         color = selectedColor ?: Color(0xFF64B5F6),
         date = taskLocalDate.toString(),
-        repeatRule = repeatRule
+        repeatRule = repeatRule,
+        subtasks = subtasks // ADD THIS
     )
+
 }
 
 // Add this helper function for single time calculations
