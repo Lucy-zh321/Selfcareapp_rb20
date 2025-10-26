@@ -70,16 +70,10 @@ class MyApp : Application() {
 // Add this data class at the top level (outside of any function)
 
 @Composable
-fun AddTaskScreen(onBack: () -> Unit,
-                  onTaskAdded: (Task) -> Unit = {},
-                  existingTask: Task? = null
-) {
+fun AddTaskScreen(onBack: () -> Unit, onTaskAdded: (Task) -> Unit = {}) {
     // SAFETY: Initialize ThreeTenABP properly
     val context = LocalContext.current
-    var taskName by remember { mutableStateOf(existingTask?.name ?: "") }
-    var selectedTime by remember { mutableStateOf(existingTask?.startTime ?: "09:00") }
-    // ... initialize all other states with existingTask data ...
-    var subtasks by remember { mutableStateOf(existingTask?.subtasks ?: emptyList()) }
+
     var isDateInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -93,9 +87,9 @@ fun AddTaskScreen(onBack: () -> Unit,
     }
 
     // State declarations
-
+    var taskName by remember { mutableStateOf("") }
     var showTimeDialog by remember { mutableStateOf(false) }
-
+    var selectedTime by remember { mutableStateOf("09:00") }
     var selectedLength by remember { mutableStateOf<String?>("1h") }
     var manualTimeRange by remember { mutableStateOf<String?>(null) }
     var isCustomDuration by remember { mutableStateOf(false) }
@@ -213,7 +207,7 @@ fun AddTaskScreen(onBack: () -> Unit,
     var showNotificationOptionsDialog by remember { mutableStateOf(false) }
     var showCustomNotificationDialog by remember { mutableStateOf(false) }
     var mainNote by remember { mutableStateOf("") }
-
+    var subtasks by remember { mutableStateOf<List<SubtaskItem>>(emptyList()) }
 
 
 
@@ -742,62 +736,20 @@ fun AddTaskScreen(onBack: () -> Unit,
                         .background(getSelectedColor(selectedColor), CircleShape)
                         // In your save button clickable modifier:
                         .clickable {
-                            val task = if (existingTask != null) {
-                                // UPDATE EXISTING TASK
-                                existingTask.copy(
-                                    name = taskName,
-                                    startTime = selectedTime,
-                                    endTime = if (manualTimeRange != null) {
-                                        manualTimeRange!!.split(" - ").getOrNull(1) ?: calculateEndTime(selectedTime, selectedLength ?: "1h")
-                                    } else {
-                                        calculateEndTime(selectedTime, selectedLength ?: "1h").split(" - ").getOrNull(1) ?: "10:00"
-                                    },
-                                    color = selectedColor ?: Color(0xFF64B5F6),
-                                    date = try {
-                                        LocalDate.of(selectedDate.year, selectedDate.monthValue, selectedDate.dayOfMonth).toString()
-                                    } catch (e: Exception) {
-                                        LocalDate.now().toString()
-                                    },
-                                    repeatRule = if (repeatUnit != "Once") {
-                                        RepeatRule(
-                                            frequency = repeatUnit.lowercase(),
-                                            interval = repeatInterval,
-                                            daysOfWeek = if (repeatUnit == "Week") repeatDays else null,
-                                            endDate = when (repeatEndCondition) {
-                                                is EndCondition.OnDate -> {
-                                                    val endLocalDate = LocalDate.of(
-                                                        (repeatEndCondition as EndCondition.OnDate).date.year,
-                                                        (repeatEndCondition as EndCondition.OnDate).date.monthValue,
-                                                        (repeatEndCondition as EndCondition.OnDate).date.dayOfMonth
-                                                    )
-                                                    endLocalDate.toString()
-                                                }
-                                                else -> null
-                                            }
-                                        )
-                                    } else {
-                                        null
-                                    },
-                                    subtasks = subtasks
-                                )
-                            } else {
-                                // CREATE NEW TASK (your existing code)
-                                createTaskFromInput(
-                                    taskName = taskName,
-                                    selectedTime = selectedTime,
-                                    selectedDate = selectedDate,
-                                    selectedColor = selectedColor,
-                                    repeatUnit = repeatUnit,
-                                    repeatDays = repeatDays,
-                                    repeatEndCondition = repeatEndCondition,
-                                    repeatInterval = repeatInterval,
-                                    selectedLength = selectedLength,
-                                    manualTimeRange = manualTimeRange,
-                                    subtasks = subtasks
-                                )
-                            }
-
-                            onTaskAdded(task)
+                            // In your save button click handler:
+                            val newTask = createTaskFromInput(
+                                taskName = taskName,
+                                selectedTime = selectedTime,
+                                selectedDate = selectedDate,
+                                selectedColor = selectedColor,
+                                repeatUnit = repeatUnit,
+                                repeatDays = repeatDays,
+                                repeatEndCondition = repeatEndCondition,
+                                repeatInterval = repeatInterval,  // ADD THIS
+                                selectedLength = selectedLength,
+                                manualTimeRange = manualTimeRange
+                            )
+                            onTaskAdded(newTask)
                             onBack()
                         }
                         .padding(12.dp),
