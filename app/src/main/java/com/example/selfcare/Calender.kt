@@ -77,9 +77,9 @@ data class Task(
     val color: Color,
     val date: String,
     val repeatRule: RepeatRule? = null,
-    val subtasks: List<SubtaskItem> = emptyList() // ADD THIS
+    val subtasks: List<SubtaskItem> = emptyList(),
+    val details: String = "" // ADD THIS
 )
-
 
 
 
@@ -349,6 +349,7 @@ fun CalendarView(
                 task = task,
                 subtasks = task.subtasks,
                 onSubtaskChecked = { subtaskId, completed ->
+                    // Create updated subtasks list
                     val updatedSubtasks = task.subtasks.map { subtask ->
                         if (subtask.id == subtaskId) {
                             subtask.copy(isCompleted = completed)
@@ -356,15 +357,22 @@ fun CalendarView(
                             subtask
                         }
                     }
+
+                    // Create the updated task
                     val updatedTask = task.copy(subtasks = updatedSubtasks)
+
+                    // Update the task in your state
                     onUpdateTask(updatedTask)
+
+                    // Also update the selectedTask locally so the UI updates immediately
+                    selectedTask = updatedTask
                 },
                 onDeleteTask = {
-                    showDeleteDialog = true // Show delete options dialog
+                    showDeleteDialog = true
                 },
                 onEditTask = {
                     selectedTask = null
-                    onEditTask(task) // Navigate to edit screen with existing task
+                    onEditTask(task)
                 },
                 onDismiss = { selectedTask = null }
             )
@@ -516,7 +524,8 @@ fun createTaskFromInput(
     repeatInterval: Int = 1,  // ADD THIS PARAMETER
     selectedLength: String? = null,
     manualTimeRange: String? = null,
-    subtasks: List<SubtaskItem> = emptyList()
+    subtasks: List<SubtaskItem> = emptyList(),
+    details: String = ""
 ): Task {
     val startTime: String
     val endTime: String
@@ -588,7 +597,8 @@ fun createTaskFromInput(
         color = selectedColor ?: Color(0xFF64B5F6),
         date = taskLocalDate.toString(),
         repeatRule = repeatRule,
-        subtasks = subtasks // ADD THIS
+        subtasks = subtasks, // ADD THIS
+        details = details
     )
 
 }

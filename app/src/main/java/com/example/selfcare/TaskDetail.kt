@@ -2,6 +2,8 @@ package com.example.selfcare
 
 
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -33,7 +35,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.times
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskDetailBottomSheet(
@@ -74,69 +79,124 @@ fun TaskDetailBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
+            // Time and Date Section - ADD THIS SECTION
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                // Format the date for display
+                val formattedDate = try {
+                    val taskDate = LocalDate.parse(task.date)
+                    taskDate.format(DateTimeFormatter.ofPattern("EEE, MMM d, yyyy"))
+                } catch (e: Exception) {
+                    task.date // Fallback to raw date if parsing fails
+                }
+
+                // Time range
+                Text(
+                    text = "${task.startTime} - ${task.endTime}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Date
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             // Task Name Section
             Text(
                 text = task.name,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Divider line
             Divider(
                 color = Color.LightGray,
                 thickness = 1.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Subtasks Section
+            if (subtasks.isNotEmpty()) {
+                Text(
+                    text = "Subtasks",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
 
-            // Subtasks Section - Scrollable if needed
-            val scrollState = rememberScrollState()
-
-            Column(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .verticalScroll(scrollState)
-            ) {
-                if (subtasks.isNotEmpty()) {
-                    subtasks.forEach { subtask ->
-                        SubtaskCheckRow(
-                            subtask = subtask,
-                            taskColor = task.color,
-                            onCheckedChange = { checked ->
-                                onSubtaskChecked(subtask.id, checked)
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                } else {
-                    // Empty state
-                    Text(
-                        text = "No subtasks",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        textAlign = TextAlign.Center
+                subtasks.forEach { subtask ->
+                    SubtaskCheckRow(
+                        subtask = subtask,
+                        taskColor = task.color,
+                        onCheckedChange = { checked ->
+                            onSubtaskChecked(subtask.id, checked)
+                        }
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Details Section - ADD THIS SECTION
+            if (task.details.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Text(
+                        text = task.details,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.DarkGray,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .background(
+                                Color.LightGray.copy(alpha = 0.2f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // Action Buttons Section
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .height(60.dp)
+                    .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Delete Button - Less rounded, task color
+                // Delete Button
                 Button(
                     onClick = onDeleteTask,
                     modifier = Modifier
@@ -147,12 +207,12 @@ fun TaskDetailBottomSheet(
                         containerColor = task.color,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(12.dp) // Less rounded corners
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Delete")
                 }
 
-                // Edit Button - Less rounded, task color
+                // Edit Button
                 Button(
                     onClick = onEditTask,
                     modifier = Modifier
@@ -163,7 +223,7 @@ fun TaskDetailBottomSheet(
                         containerColor = task.color,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(12.dp) // Less rounded corners
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Edit")
                 }
@@ -180,15 +240,31 @@ fun SubtaskCheckRow(
     taskColor: Color,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    var currentCheckedState by remember(subtask.id) {
+        mutableStateOf(subtask.isCompleted)
+    }
+
+    LaunchedEffect(subtask.isCompleted) {
+        currentCheckedState = subtask.isCompleted
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .clickable {
+                val newState = !currentCheckedState
+                currentCheckedState = newState
+                onCheckedChange(newState)
+            }
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
-            checked = subtask.isCompleted,
-            onCheckedChange = onCheckedChange,
+            checked = currentCheckedState,
+            onCheckedChange = { newState ->
+                currentCheckedState = newState
+                onCheckedChange(newState)
+            },
             colors = CheckboxDefaults.colors(
                 checkedColor = taskColor,
                 uncheckedColor = taskColor.copy(alpha = 0.6f)
@@ -202,11 +278,11 @@ fun SubtaskCheckRow(
             text = subtask.text,
             modifier = Modifier
                 .weight(1f)
-                .padding(vertical = 8.dp),
+                .padding(vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
-                textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                textDecoration = if (currentCheckedState) TextDecoration.LineThrough else TextDecoration.None
             ),
-            color = if (subtask.isCompleted) Color.Gray else Color.Black
+            color = if (currentCheckedState) Color.Gray else Color.Black
         )
     }
 }

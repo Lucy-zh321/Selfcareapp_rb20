@@ -746,6 +746,7 @@ fun AddTaskScreen(onBack: () -> Unit,
                         .size(60.dp)
                         .background(getSelectedColor(selectedColor), CircleShape)
                         // In your save button clickable modifier:
+                        // In your save button clickable modifier:
                         .clickable {
                             val task = if (existingTask != null) {
                                 // UPDATE EXISTING TASK
@@ -753,7 +754,6 @@ fun AddTaskScreen(onBack: () -> Unit,
                                     name = taskName,
                                     startTime = selectedTime,
                                     endTime = if (manualTimeRange != null) {
-                                        // Use let to safely handle the nullable manualTimeRange
                                         manualTimeRange?.let { range ->
                                             range.split(" - ").getOrNull(1)
                                         } ?: calculateEndTime(selectedTime, selectedLength ?: "1h")
@@ -786,7 +786,8 @@ fun AddTaskScreen(onBack: () -> Unit,
                                     } else {
                                         null
                                     },
-                                    subtasks = subtasks
+                                    subtasks = subtasks,
+                                    details = mainNote // ADD THIS
                                 )
                             } else {
                                 // CREATE NEW TASK
@@ -801,7 +802,8 @@ fun AddTaskScreen(onBack: () -> Unit,
                                     repeatInterval = repeatInterval,
                                     selectedLength = selectedLength,
                                     manualTimeRange = manualTimeRange,
-                                    subtasks = subtasks
+                                    subtasks = subtasks,
+                                    details = mainNote // ADD THIS
                                 )
                             }
                             onTaskAdded(task)
@@ -1035,7 +1037,6 @@ fun AddTaskScreen(onBack: () -> Unit,
 
 }
 
-
 @Composable
 fun SubtaskRow(
     subtask: SubtaskItem,
@@ -1043,8 +1044,16 @@ fun SubtaskRow(
     onTextChanged: (String) -> Unit,
     onCompletedChanged: (Boolean) -> Unit,
     onDelete: () -> Unit,
-    isEditable: Boolean = true // Add this parameter
+    isEditable: Boolean = true
 ) {
+    var currentCheckedState by remember(subtask.id) {
+        mutableStateOf(subtask.isCompleted)
+    }
+
+    LaunchedEffect(subtask.isCompleted) {
+        currentCheckedState = subtask.isCompleted
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1052,8 +1061,11 @@ fun SubtaskRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
-            checked = subtask.isCompleted,
-            onCheckedChange = onCompletedChanged,
+            checked = currentCheckedState,
+            onCheckedChange = { newState ->
+                currentCheckedState = newState
+                onCompletedChanged(newState)
+            },
             colors = CheckboxDefaults.colors(
                 checkedColor = getSelectedColor(selectedColor)
             ),
@@ -1063,7 +1075,6 @@ fun SubtaskRow(
         Spacer(modifier = Modifier.width(8.dp))
 
         if (isEditable) {
-            // Editable version (for AddTaskScreen)
             BasicTextField(
                 value = subtask.text,
                 onValueChange = onTextChanged,
@@ -1073,7 +1084,7 @@ fun SubtaskRow(
                     .padding(vertical = 8.dp),
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 14.sp,
-                    textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    textDecoration = if (currentCheckedState) TextDecoration.LineThrough else TextDecoration.None
                 ),
                 singleLine = true,
                 decorationBox = { innerTextField ->
@@ -1087,16 +1098,15 @@ fun SubtaskRow(
                 }
             )
         } else {
-            // Read-only version (for TaskDetailBottomSheet)
             Text(
                 text = subtask.text,
                 modifier = Modifier
                     .weight(1f)
                     .padding(vertical = 8.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    textDecoration = if (currentCheckedState) TextDecoration.LineThrough else TextDecoration.None
                 ),
-                color = if (subtask.isCompleted) Color.Gray else Color.Black
+                color = if (currentCheckedState) Color.Gray else Color.Black
             )
         }
 
